@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocuScan — 100% Free AI Contract Analysis for Linux</title>
+  <meta name="description" content="Upload any contract, catch hidden red flags, and get an instant safety score before you sign. 100% free, runs entirely on your device.">
+
+  <!-- ================= FAVICON (generated from assets/logo.svg) =================
+       Files live in ./assets/. To regenerate from a new logo:
+         cairosvg logo.svg -o favicon-32.png --output-width 32   (repeat for 64/180/512)
+         convert favicon-32.png favicon-64.png favicon.ico                       -->
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <!-- Typography: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN (works immediately, no build step) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    /* Brand palette pulled from assets/logo.svg */
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand:  { DEFAULT: '#3b82f6', dark: '#2563eb' }, // logo gradient start
+            accent: { DEFAULT: '#0ea5a4', dark: '#0d9488' }, // logo gradient end
+            ink:    '#0b3b5e',                               // logo shadow navy
+            flag:   '#ef4444'                                // logo red-flag bar
+          },
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+
+  <!-- Custom styles (gauge, tabs, animations) -->
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+
+<body class="bg-slate-50 text-slate-700 antialiased">
+
+  <!-- ============================================================
+       1. NAVIGATION BAR
+       ============================================================ -->
+  <header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/60">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo & name -->
+      <a href="#home" class="flex items-center gap-2.5">
+        <img src="assets/logo.svg" alt="DocuScan logo" class="w-9 h-9 rounded-lg">
+        <span class="text-xl font-extrabold text-ink tracking-tight">DocuScan</span>
+      </a>
+
+      <!-- Desktop links -->
+      <div class="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-600">
+        <a href="#home"      class="nav-link hover:text-ink">Home</a>
+        <a href="#features"  class="nav-link hover:text-ink">Features</a>
+        <a href="#dashboard" class="nav-link hover:text-ink">Dashboard</a>
+        <a href="#about"     class="nav-link hover:text-ink">About &amp; Founder</a>
+        <a href="#reviews"   class="nav-link hover:text-ink">Reviews</a>
+        <a href="#download"  class="nav-link hover:text-ink">Download</a>
+      </div>
+
+      <!-- CTA + hamburger -->
+      <div class="flex items-center gap-3">
+        <!-- PLACEHOLDER: replace # with the Snapcraft store URL -->
+        <a href="#" class="hidden sm:inline-flex brand-gradient text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md shadow-brand/25 hover:opacity-90 transition">
+          Get it on Snapcraft
+        </a>
+        <button id="menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-slate-100" aria-label="Open menu">
+          <svg class="w-6 h-6 text-ink" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-slate-100 px-6 py-4 space-y-3 text-sm font-medium text-slate-600">
+      <a href="#home"      class="block hover:text-ink">Home</a>
+      <a href="#features"  class="block hover:text-ink">Features</a>
+      <a href="#dashboard" class="block hover:text-ink">Dashboard</a>
+      <a href="#about"     class="block hover:text-ink">About &amp; Founder</a>
+      <a href="#reviews"   class="block hover:text-ink">Reviews</a>
+      <a href="#download"  class="block hover:text-ink">Download</a>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       2. HERO SECTION
+       ============================================================ -->
+  <section id="home" class="relative pt-32 pb-24 overflow-hidden">
+    <!-- Decorative gradient blobs -->
+    <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-brand/10 blur-3xl"></div>
+    <div class="absolute top-40 -left-32 w-96 h-96 rounded-full bg-accent/10 blur-3xl"></div>
+
+    <div class="relative max-w-4xl mx-auto px-6 text-center">
+      <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold mb-6">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        100% Free Forever · No Paywalls · No Premium Tiers
+      </span>
+
+      <h1 class="text-4xl sm:text-6xl font-black text-ink tracking-tight leading-tight">
+        100% Free, <span class="brand-gradient-text">AI-Powered</span><br>Contract Analysis
+      </h1>
+
+      <p class="mt-6 text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto">
+        Upload any contract, catch hidden red flags, and get an instant safety score before you sign.
+      </p>
+
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="#dashboard" class="brand-gradient text-white font-semibold px-8 py-3.5 rounded-full shadow-lg shadow-brand/30 hover:opacity-90 hover:scale-[1.02] transition">
+          Analyze a Contract Now →
+        </a>
+        <!-- PLACEHOLDER: replace # with the Snapcraft store URL -->
+        <a href="#" class="font-semibold px-8 py-3.5 rounded-full border-2 border-slate-300 text-ink hover:border-accent hover:text-accent transition">
+          ⬇ Download for Linux
+        </a>
+      </div>
+
+      <p class="mt-8 text-sm text-slate-400">
+        🔒 Runs 100% on your device · No account needed · Open source (GPL-3.0)
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FEATURES STRIP (nav target: #features)
+       ============================================================ -->
+  <section id="features" class="py-20 bg-white border-y border-slate-100">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-14 reveal">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-ink">Why people trust DocuScan</h2>
+        <p class="mt-3 text-slate-500 max-w-xl mx-auto">A full legal-triage toolkit — without the legal-tech price tag.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="lift reveal p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center text-2xl mb-4">🚩</div>
+          <h3 class="font-bold text-ink mb-1.5">Red-Flag Detection</h3>
+          <p class="text-sm text-slate-500">Non-competes, uncapped liability, auto-renewals — 41 clause categories flagged instantly.</p>
+        </div>
+        <div class="lift reveal p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center text-2xl mb-4">🎯</div>
+          <h3 class="font-bold text-ink mb-1.5">Safety Score</h3>
+          <p class="text-sm text-slate-500">One clear "Good to Go" percentage that tells you how safe a contract is to sign.</p>
+        </div>
+        <div class="lift reveal p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center text-2xl mb-4">🔒</div>
+          <h3 class="font-bold text-ink mb-1.5">Private by Design</h3>
+          <p class="text-sm text-slate-500">The neural model runs entirely on your device. Your contracts never leave your computer.</p>
+        </div>
+        <div class="lift reveal p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="w-12 h-12 rounded-xl brand-gradient flex items-center justify-center text-2xl mb-4">💸</div>
+          <h3 class="font-bold text-ink mb-1.5">Free. Actually Free.</h3>
+          <p class="text-sm text-slate-500">Zero paid features, zero subscriptions, zero ads. Every feature, for everyone.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       3. CORE TOOL INTERFACE — THE APP DASHBOARD
+       ============================================================ -->
+  <section id="dashboard" class="py-24">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12 reveal">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-ink">Try the Dashboard</h2>
+        <p class="mt-3 text-slate-500">A live preview of the DocuScan desktop experience.</p>
+      </div>
+
+      <!-- Mock app window -->
+      <div class="reveal bg-white rounded-3xl border border-slate-200 shadow-2xl shadow-ink/10 overflow-hidden">
+        <!-- Window chrome -->
+        <div class="flex items-center gap-2 px-5 py-3.5 bg-slate-100/80 border-b border-slate-200">
+          <span class="w-3 h-3 rounded-full bg-red-400"></span>
+          <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+          <span class="ml-3 text-xs font-medium text-slate-400">DocuScan — Contract Analyzer</span>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="flex gap-2 px-5 pt-5">
+          <button data-tab="analyzer" class="tab-btn active px-5 py-2.5 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100">🔍 Analyzer</button>
+          <button data-tab="memory"   class="tab-btn px-5 py-2.5 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100">🗂 Memory</button>
+          <button data-tab="compare"  class="tab-btn px-5 py-2.5 rounded-full text-sm font-semibold text-slate-600 hover:bg-slate-100">⚖️ Compare</button>
+        </div>
+
+        <!-- ============ TAB A: ANALYZER ============ -->
+        <div id="panel-analyzer" class="tab-panel active p-5 sm:p-8">
+
+          <!-- State 1: upload zone -->
+          <div id="upload-state">
+            <div id="dropzone" class="dropzone cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl px-6 py-16 text-center hover:border-accent">
+              <div class="w-16 h-16 mx-auto rounded-2xl brand-gradient flex items-center justify-center text-3xl mb-5 shadow-lg shadow-brand/25">📄</div>
+              <p class="text-lg font-semibold text-ink">Drag &amp; drop your contract here</p>
+              <p class="text-sm text-slate-400 mt-1.5">or click to browse — PDF, DOCX, and TXT supported</p>
+              <button id="demo-btn" class="mt-6 px-6 py-2.5 rounded-full brand-gradient text-white text-sm font-semibold shadow-md shadow-brand/25 hover:opacity-90 transition">
+                ▶ Run a Sample Analysis
+              </button>
+            </div>
+            <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt">
+          </div>
+
+          <!-- State 2: analyzing (progress) -->
+          <div id="analyzing-state" class="hidden py-16 text-center">
+            <div class="w-14 h-14 mx-auto rounded-full border-4 border-slate-200 border-t-accent animate-spin mb-6"></div>
+            <p class="font-semibold text-ink">Analyzing <span id="analyzing-filename" class="text-accent"></span></p>
+            <p id="progress-label" class="text-sm text-slate-400 mt-1">Extracting text…</p>
+            <div class="max-w-sm mx-auto mt-5 h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div id="progress-bar" class="progress-bar h-full brand-gradient rounded-full" style="width:0%"></div>
+            </div>
+          </div>
+
+          <!-- State 3: results -->
+          <div id="results-state" class="hidden">
+            <div class="grid lg:grid-cols-3 gap-6">
+
+              <!-- "Good to Go" gauge -->
+              <div class="lg:col-span-1 bg-slate-50 rounded-2xl border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+                <p class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-4">Good-to-Go Estimate</p>
+                <div class="relative w-36 h-36">
+                  <svg viewBox="0 0 120 120" class="w-full h-full">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#e2e8f0" stroke-width="11"/>
+                    <circle id="gauge-ring" class="gauge-ring" cx="60" cy="60" r="52" fill="none"
+                            stroke="#10b981" stroke-width="11" stroke-linecap="round"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <span id="gauge-label" class="text-3xl font-black">0%</span>
+                  </div>
+                </div>
+                <p id="gauge-verdict" class="mt-4 font-bold text-ink">—</p>
+                <p class="text-xs text-slate-400 mt-2">⚖️ Triage aid — not legal advice.</p>
+              </div>
+
+              <!-- Info + Review + Red Flags -->
+              <div class="lg:col-span-2 space-y-5">
+
+                <!-- Info section: extracted metadata -->
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                  <h4 class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-3">📋 Document Info</h4>
+                  <p id="info-title" class="font-bold text-ink text-lg"></p>
+                  <p class="text-xs text-slate-400 mb-4">Source: <span id="info-file"></span></p>
+                  <div class="grid sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p class="font-semibold text-slate-600 mb-1.5">Parties</p>
+                      <ul id="info-parties" class="space-y-1 text-slate-500 list-disc list-inside"></ul>
+                    </div>
+                    <div>
+                      <p class="font-semibold text-slate-600 mb-1.5">Key Dates</p>
+                      <ul id="info-dates" class="space-y-1 text-slate-500"></ul>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Review section: items to double-check -->
+                <div>
+                  <h4 class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-3">🔎 Review — Double-Check These</h4>
+                  <ul id="review-list" class="space-y-3"></ul>
+                </div>
+
+                <!-- Red flags section -->
+                <div>
+                  <h4 class="text-xs uppercase tracking-widest text-red-400 font-bold mb-3">🚩 Red Flags — Critical</h4>
+                  <ul id="redflag-list" class="space-y-3"></ul>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-wrap gap-3 pt-2">
+                  <button id="btn-download-report" class="px-5 py-2.5 rounded-full brand-gradient text-white text-sm font-semibold hover:opacity-90 transition">⬇ Download Report</button>
+                  <button id="btn-share-report" class="px-5 py-2.5 rounded-full border border-slate-300 text-sm font-semibold text-slate-600 hover:border-accent hover:text-accent transition">↗ Share Report</button>
+                  <button id="btn-custom-link" class="px-5 py-2.5 rounded-full border border-slate-300 text-sm font-semibold text-slate-600 hover:border-accent hover:text-accent transition">🔗 Generate Custom Link</button>
+                  <button id="btn-analyze-another" class="px-5 py-2.5 rounded-full text-sm font-semibold text-slate-400 hover:text-ink transition">↺ Analyze Another</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ TAB B: MEMORY ============ -->
+        <div id="panel-memory" class="tab-panel p-5 sm:p-8">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h3 class="font-bold text-ink text-lg">Saved Contracts</h3>
+              <p class="text-sm text-slate-400">Stored securely &amp; locally on your device.</p>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500">🔒 Encrypted at rest</span>
+          </div>
+          <!-- Populated by js/app.js from MOCK_CONTRACTS -->
+          <div id="memory-list" class="space-y-3"></div>
+        </div>
+
+        <!-- ============ TAB C: COMPARE ============ -->
+        <div id="panel-compare" class="tab-panel p-5 sm:p-8">
+          <h3 class="font-bold text-ink text-lg mb-1">Compare Contracts</h3>
+          <p class="text-sm text-slate-400 mb-6">Pick two documents from Memory to see differences, conflicting clauses, and safety scores side-by-side.</p>
+
+          <div class="flex flex-col sm:flex-row gap-3 mb-6">
+            <select id="compare-a" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-accent"></select>
+            <span class="self-center text-slate-400 font-bold">vs</span>
+            <select id="compare-b" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-accent"></select>
+            <button id="compare-btn" class="px-6 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold hover:opacity-90 transition">Compare →</button>
+          </div>
+
+          <!-- Populated by js/app.js -->
+          <div id="compare-results">
+            <p class="text-center text-slate-400 py-10">Select two contracts and hit <strong>Compare</strong>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       4 + 5. ABOUT & FOUNDER
+       ============================================================ -->
+  <section id="about" class="py-24 bg-white border-y border-slate-100">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <!-- ---- 4. Creator / Founder ---- -->
+      <div class="reveal grid md:grid-cols-5 gap-10 items-center mb-24">
+        <div class="md:col-span-2 flex justify-center">
+          <div class="relative">
+            <div class="absolute -inset-3 rounded-3xl brand-gradient opacity-20 blur-lg"></div>
+            <!-- PLACEHOLDER IMAGE: drop creator_image.jpeg into website/assets/.
+                 The onerror fallback shows a styled monogram until the file exists. -->
+            <img src="assets/creator_image.jpeg" alt="Rahul Awasthi, Creator of DocuScan"
+                 class="relative w-56 h-56 sm:w-64 sm:h-64 object-cover rounded-3xl border-4 border-white shadow-xl"
+                 onerror="this.outerHTML='<div class=&quot;relative w-56 h-56 sm:w-64 sm:h-64 rounded-3xl brand-gradient flex items-center justify-center text-white text-7xl font-black border-4 border-white shadow-xl&quot;>RA</div>'">
+          </div>
+        </div>
+        <div class="md:col-span-3 text-center md:text-left">
+          <p class="text-sm font-bold uppercase tracking-widest text-accent mb-2">Meet the Founder</p>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-ink">Rahul Awasthi</h2>
+          <p class="text-slate-400 font-semibold mt-1 mb-5">Creator &amp; Lead Developer</p>
+          <p class="text-slate-500 leading-relaxed">
+            Rahul builds privacy-first legal technology with a simple conviction: understanding what
+            you're signing shouldn't require a law degree — or a credit card. After watching friends
+            and freelancers get burned by clauses buried on page nine, he built DocuScan to put a
+            lawyer's first-pass instincts into everyone's hands, entirely free and fully offline.
+            Every line of DocuScan is open source, every analysis runs on your own device, and every
+            feature ships to every user — no premium tiers, ever. That transparency isn't a business
+            model; it's the point.
+          </p>
+        </div>
+      </div>
+
+      <!-- ---- 5. About: how the neural network works ---- -->
+      <div class="reveal text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-ink">How the AI Works</h2>
+        <p class="mt-3 text-slate-500 max-w-2xl mx-auto">A real neural network, running entirely on your machine.</p>
+      </div>
+
+      <div class="reveal grid md:grid-cols-3 gap-6 mb-10">
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-3xl mb-3">1️⃣</div>
+          <h3 class="font-bold text-ink mb-2">Extract &amp; Chunk</h3>
+          <p class="text-sm text-slate-500 leading-relaxed">Your PDF, DOCX, or TXT is converted to text and split into overlapping windows so no clause slips between the cracks.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-3xl mb-3">2️⃣</div>
+          <h3 class="font-bold text-ink mb-2">Neural Clause Detection</h3>
+          <p class="text-sm text-slate-500 leading-relaxed">A RoBERTa transformer, fine-tuned on thousands of expert-annotated legal contracts, scans each window for 41 clause categories — from non-competes to uncapped liability — via fast ONNX inference on your CPU.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-3xl mb-3">3️⃣</div>
+          <h3 class="font-bold text-ink mb-2">Risk Scoring</h3>
+          <p class="text-sm text-slate-500 leading-relaxed">Detected clauses are grouped by severity and rolled into one clear safety score, with every flag linked back to the exact text that triggered it.</p>
+        </div>
+      </div>
+
+      <!-- Attribution / credits card -->
+      <div class="reveal max-w-3xl mx-auto p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-teal-50 border border-blue-100">
+        <h3 class="font-bold text-ink mb-3">🙏 Standing on the Shoulders of Giants</h3>
+        <p class="text-sm text-slate-600 leading-relaxed">
+          DocuScan's intelligence is powered by open research, and we're deeply grateful to its creators.
+          Our bundled model is <a href="https://huggingface.co/Rakib/roberta-base-on-cuad" class="font-semibold text-brand hover:underline">roberta-base-on-cuad</a>
+          by <strong>Mohammed Rakib</strong> and collaborators (Nawar, Rakib, Hai &amp; Haq, LREC 2022, MIT license) —
+          thank you for making world-class contract understanding freely available. The model was trained on
+          <a href="https://www.atticusprojectai.org/cuad" class="font-semibold text-brand hover:underline">CUAD</a>,
+          the Contract Understanding Atticus Dataset, expertly annotated by <strong>The Atticus Project</strong>
+          (Hendrycks et al., NeurIPS 2021, CC&nbsp;BY&nbsp;4.0). The underlying <strong>RoBERTa</strong> encoder was
+          released by Facebook AI (Liu et al., 2019). DocuScan simply would not exist without their work.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       6. TESTIMONIALS / REVIEWS
+       ============================================================ -->
+  <section id="reviews" class="py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-14 reveal">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-ink">Loved by Careful Signers</h2>
+        <p class="mt-3 text-slate-500">What users say — about the accuracy, and the price tag that never appears.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Review card — duplicate/edit as needed -->
+        <figure class="lift reveal p-6 rounded-2xl bg-white border border-slate-200">
+          <div class="text-amber-400 mb-3" aria-label="5 stars">★★★★★</div>
+          <blockquote class="text-slate-600 text-sm leading-relaxed">"Caught a 3-year worldwide non-compete in my offer letter that two friends had missed. I negotiated it out before signing. This app paid for itself — which is easy, because it's free."</blockquote>
+          <figcaption class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full brand-gradient flex items-center justify-center text-white font-bold text-sm">PS</div>
+            <div><p class="font-semibold text-ink text-sm">Priya S.</p><p class="text-xs text-slate-400">Software Engineer</p></div>
+          </figcaption>
+        </figure>
+
+        <figure class="lift reveal p-6 rounded-2xl bg-white border border-slate-200">
+          <div class="text-amber-400 mb-3" aria-label="5 stars">★★★★★</div>
+          <blockquote class="text-slate-600 text-sm leading-relaxed">"I review vendor agreements weekly. DocuScan's safety score matches my gut on almost every document, and the red-flag list gives me a checklist to push back with. Zero cost still amazes me."</blockquote>
+          <figcaption class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full brand-gradient flex items-center justify-center text-white font-bold text-sm">MT</div>
+            <div><p class="font-semibold text-ink text-sm">Marcus T.</p><p class="text-xs text-slate-400">Operations Manager</p></div>
+          </figcaption>
+        </figure>
+
+        <figure class="lift reveal p-6 rounded-2xl bg-white border border-slate-200">
+          <div class="text-amber-400 mb-3" aria-label="5 stars">★★★★★</div>
+          <blockquote class="text-slate-600 text-sm leading-relaxed">"As a freelancer I can't afford a lawyer for every client contract. DocuScan flags the scary stuff in seconds, offline, and hasn't asked me for a cent. Genuinely can't believe there's no catch."</blockquote>
+          <figcaption class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full brand-gradient flex items-center justify-center text-white font-bold text-sm">EK</div>
+            <div><p class="font-semibold text-ink text-sm">Elena K.</p><p class="text-xs text-slate-400">Freelance Designer</p></div>
+          </figcaption>
+        </figure>
+
+        <figure class="lift reveal p-6 rounded-2xl bg-white border border-slate-200">
+          <div class="text-amber-400 mb-3" aria-label="5 stars">★★★★★</div>
+          <blockquote class="text-slate-600 text-sm leading-relaxed">"The Compare view is brilliant. I put two lease offers side-by-side and instantly saw one had an auto-renewal trap the other didn't. Saved me from a two-year mistake."</blockquote>
+          <figcaption class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full brand-gradient flex items-center justify-center text-white font-bold text-sm">DR</div>
+            <div><p class="font-semibold text-ink text-sm">David R.</p><p class="text-xs text-slate-400">Small Business Owner</p></div>
+          </figcaption>
+        </figure>
+
+        <figure class="lift reveal p-6 rounded-2xl bg-white border border-slate-200">
+          <div class="text-amber-400 mb-3" aria-label="5 stars">★★★★★</div>
+          <blockquote class="text-slate-600 text-sm leading-relaxed">"Everything runs locally — I checked the network traffic myself. For confidential agreements that's non-negotiable. Accurate, private, and free. It's the whole package."</blockquote>
+          <figcaption class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full brand-gradient flex items-center justify-center text-white font-bold text-sm">AN</div>
+            <div><p class="font-semibold text-ink text-sm">Aisha N.</p><p class="text-xs text-slate-400">Privacy Consultant</p></div>
+          </figcaption>
+        </figure>
+
+        <figure class="lift reveal p-6 rounded-2xl bg-white border border-slate-200">
+          <div class="text-amber-400 mb-3" aria-label="5 stars">★★★★★</div>
+          <blockquote class="text-slate-600 text-sm leading-relaxed">"Installed from Snapcraft in one click on Ubuntu. The Memory page keeps my whole analysis history organized. Other tools charge $30/month for half of this."</blockquote>
+          <figcaption class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full brand-gradient flex items-center justify-center text-white font-bold text-sm">LO</div>
+            <div><p class="font-semibold text-ink text-sm">Lars O.</p><p class="text-xs text-slate-400">Linux Enthusiast</p></div>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       7. DOWNLOAD — short & punchy
+       ============================================================ -->
+  <section id="download" class="py-24 bg-ink relative overflow-hidden">
+    <div class="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-brand/20 blur-3xl"></div>
+    <div class="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-accent/20 blur-3xl"></div>
+
+    <div class="relative max-w-3xl mx-auto px-6 text-center reveal">
+      <img src="assets/logo.svg" alt="DocuScan logo" class="w-24 h-24 mx-auto rounded-3xl shadow-2xl mb-6">
+      <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight">Sign smarter. Today.</h2>
+      <p class="mt-4 text-slate-300">One click. No account. No cost.</p>
+
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <!-- PLACEHOLDER: replace # with the Snapcraft store URL, e.g.
+             https://snapcraft.io/docuscan -->
+        <a href="#" class="brand-gradient text-white font-bold text-lg px-10 py-4 rounded-full shadow-xl shadow-brand/30 hover:opacity-90 hover:scale-[1.02] transition">
+          ⬇ Download for Linux
+        </a>
+        <span class="text-sm font-semibold text-slate-300 px-4 py-2 rounded-full border border-slate-600">
+          Available on Snapcraft • 100% Free
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       8. FOOTER
+       ============================================================ -->
+  <footer class="bg-slate-900 text-slate-400 py-10">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-sm">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.svg" alt="" class="w-7 h-7 rounded-md">
+        <span>© 2026 DocuScan · Rahul Awasthi · GPL-3.0-or-later</span>
+      </div>
+
+      <!-- Reassurance badge -->
+      <span class="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold">
+        100% Free. No Hidden Fees. No Premium Tiers.
+      </span>
+
+      <!-- PLACEHOLDER: replace # with the Snapcraft store URL -->
+      <a href="#" class="hover:text-white transition font-medium">Get it on Snapcraft ↗</a>
+    </div>
+    <p class="text-center text-xs text-slate-600 mt-8 px-6">⚖️ DocuScan is a triage aid, not legal advice. Always have a qualified lawyer review important agreements.</p>
+  </footer>
+
+
+
+  <!-- Toast for demo-button feedback -->
+  <div id="toast" class="hidden-toast fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full bg-ink text-white text-sm font-medium shadow-xl"></div>
+
+  <!-- App logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>

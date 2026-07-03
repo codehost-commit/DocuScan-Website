@@ -1,5 +1,5 @@
 /* ============================================================
-   DocuScan — app.js
+   DocuScan, app.js
    Clean, modular vanilla JS. Each feature lives in its own
    module object with an init() method, wired up at the bottom.
    Swap MOCK_CONTRACTS for real API data later.
@@ -8,7 +8,17 @@
 'use strict';
 
 /* ------------------------------------------------------------
-   MOCK DATA — replace with real backend results later.
+   Inline SVG icons (currentColor, so they inherit text color)
+   ------------------------------------------------------------ */
+const ICONS = {
+  flag:  '<svg class="icon w-4 h-4 inline-block align-[-2px] mr-1.5" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+  warn:  '<svg class="icon w-4 h-4 inline-block align-[-2px] mr-1.5" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  check: '<svg class="icon w-4 h-4 inline-block align-[-2px] mr-1.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  doc:   '<svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+};
+
+/* ------------------------------------------------------------
+   MOCK DATA, replace with real backend results later.
    Shared by the Analyzer, Memory, and Compare views.
    ------------------------------------------------------------ */
 const MOCK_CONTRACTS = [
@@ -21,8 +31,8 @@ const MOCK_CONTRACTS = [
     parties: ['Rakesh Awasthi (Contractor)', 'Northwind Studios LLC (Client)'],
     dates: { effective: 'Jul 1, 2026', term: '12 months', renewal: 'Manual renewal' },
     review: [
-      { clause: 'Payment terms — Net 45', note: 'Longer than the industry-standard Net 30. Consider negotiating.' },
-      { clause: 'Revision rounds — “reasonable revisions”', note: 'Vague scope. Ask for a fixed number of revision rounds.' }
+      { clause: 'Payment terms: Net 45', note: 'Longer than the industry-standard Net 30. Consider negotiating.' },
+      { clause: 'Revision rounds: "reasonable revisions"', note: 'Vague scope. Ask for a fixed number of revision rounds.' }
     ],
     redFlags: []
   },
@@ -31,12 +41,12 @@ const MOCK_CONTRACTS = [
     name: 'SaaS_Subscription_Terms.pdf',
     date: '2026-06-15',
     score: 62,
-    title: 'Master SaaS Subscription & Services Agreement',
+    title: 'Master SaaS Subscription and Services Agreement',
     parties: ['Acme Cloudworks Inc. (Provider)', 'BlueRiver Analytics (Customer)'],
     dates: { effective: 'Jun 20, 2026', term: '24 months', renewal: 'Auto-renews for 12-month terms' },
     review: [
-      { clause: 'Auto-renewal — 90-day cancellation notice', note: 'Easy to miss. Set a reminder well before the window.' },
-      { clause: 'Price escalation — up to 7% annually', note: 'Above typical CPI adjustments. Try to cap at 3–5%.' }
+      { clause: 'Auto-renewal: 90-day cancellation notice', note: 'Easy to miss. Set a reminder well before the window.' },
+      { clause: 'Price escalation: up to 7% annually', note: 'Above typical CPI adjustments. Try to cap at 3 to 5%.' }
     ],
     redFlags: [
       { clause: 'Unilateral terms modification', note: 'Provider may change terms at any time with only email notice.' }
@@ -47,16 +57,16 @@ const MOCK_CONTRACTS = [
     name: 'Employment_Offer_TechCorp.pdf',
     date: '2026-05-30',
     score: 34,
-    title: 'Employment Agreement — Senior Engineer',
+    title: 'Employment Agreement, Senior Engineer',
     parties: ['TechCorp Global Ltd. (Employer)', 'Employee (unnamed at signing)'],
     dates: { effective: 'Jun 1, 2026', term: 'At-will', renewal: 'N/A' },
     review: [
-      { clause: 'IP assignment — includes personal projects', note: 'Covers inventions made off-hours. Request a carve-out list.' }
+      { clause: 'IP assignment: includes personal projects', note: 'Covers inventions made off-hours. Request a carve-out list.' }
     ],
     redFlags: [
-      { clause: 'Non-compete — 3 years, worldwide', note: 'Extremely broad in scope, geography, and duration. Likely unenforceable but dangerous to sign.' },
-      { clause: 'Uncapped liability for the employee', note: 'You bear unlimited liability for “any losses”. Highly unusual and unfair.' },
-      { clause: 'Mandatory arbitration + class-action waiver', note: 'Removes your right to court remedies entirely.' }
+      { clause: 'Non-compete: 3 years, worldwide', note: 'Extremely broad in scope, geography, and duration. Likely unenforceable but dangerous to sign.' },
+      { clause: 'Uncapped liability for the employee', note: 'You bear unlimited liability for "any losses". Highly unusual and unfair.' },
+      { clause: 'Mandatory arbitration plus class-action waiver', note: 'Removes your right to court remedies entirely.' }
     ]
   }
 ];
@@ -72,20 +82,20 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 /** Color for a given safety score. */
 function scoreColor(score) {
-  if (score >= 75) return '#10b981'; // emerald — good to go
-  if (score >= 50) return '#f59e0b'; // amber — caution
-  return '#ef4444';                  // red — danger
+  if (score >= 75) return '#10b981'; // emerald, good to go
+  if (score >= 50) return '#f59e0b'; // amber, caution
+  return '#ef4444';                  // red, danger
 }
 
 /** Human label for a given safety score. */
 function scoreLabel(score) {
   if (score >= 75) return 'Good to Go';
   if (score >= 50) return 'Sign with Caution';
-  return 'High Risk — Review Carefully';
+  return 'High Risk, Review Carefully';
 }
 
 /* ------------------------------------------------------------
-   Toast — lightweight feedback for demo buttons
+   Toast, lightweight feedback for demo buttons
    ------------------------------------------------------------ */
 const Toast = {
   el: null,
@@ -101,7 +111,7 @@ const Toast = {
 };
 
 /* ------------------------------------------------------------
-   Tabs — Analyzer / Memory / Compare switching
+   Tabs, Analyzer / Memory / Compare switching
    ------------------------------------------------------------ */
 const Tabs = {
   init() {
@@ -116,7 +126,7 @@ const Tabs = {
 };
 
 /* ------------------------------------------------------------
-   Analyzer — drag & drop + simulated analysis
+   Analyzer, drag and drop plus simulated analysis
    ------------------------------------------------------------ */
 const Analyzer = {
   init() {
@@ -124,13 +134,11 @@ const Analyzer = {
     const input = $('#file-input');
     if (!zone) return;
 
-    // Click or keyboard opens the (fake) file picker
     zone.addEventListener('click', () => input.click());
     input.addEventListener('change', () => {
       if (input.files.length) this.run(input.files[0].name);
     });
 
-    // Drag & drop
     ['dragenter', 'dragover'].forEach(ev =>
       zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('dragover'); }));
     ['dragleave', 'drop'].forEach(ev =>
@@ -140,19 +148,18 @@ const Analyzer = {
       this.run(name);
     });
 
-    // Demo shortcut button
     $('#demo-btn')?.addEventListener('click', e => {
       e.stopPropagation();
       this.run(DEMO_RESULT.name);
     });
 
-    // Action buttons (demo behavior — wire to real endpoints later)
+    // Action buttons (demo behavior, wire to real endpoints later)
     $('#btn-download-report')?.addEventListener('click', () =>
-      Toast.show('📄 Report saved as ' + DEMO_RESULT.name.replace('.pdf', '_report.pdf')));
+      Toast.show('Report saved as ' + DEMO_RESULT.name.replace('.pdf', '_report.pdf')));
     $('#btn-share-report')?.addEventListener('click', () =>
-      Toast.show('🔗 Share sheet opened (demo)'));
+      Toast.show('Share sheet opened (demo)'));
     $('#btn-custom-link')?.addEventListener('click', () => {
-      Toast.show('✅ Custom link copied: docuscan.app/r/x7Kq2p');
+      Toast.show('Custom link copied: docuscan.app/r/x7Kq2p');
     });
     $('#btn-analyze-another')?.addEventListener('click', () => this.reset());
   },
@@ -167,11 +174,11 @@ const Analyzer = {
     const bar   = $('#progress-bar');
     const label = $('#progress-label');
     const steps = [
-      [18, 'Extracting text…'],
-      [42, 'Chunking clauses…'],
-      [68, 'Running neural model…'],
-      [88, 'Scoring risks…'],
-      [100, 'Building report…']
+      [18, 'Extracting text'],
+      [42, 'Chunking clauses'],
+      [68, 'Running neural model'],
+      [88, 'Scoring risks'],
+      [100, 'Building report']
     ];
     bar.style.width = '0%';
     steps.forEach(([pct, msg], i) => {
@@ -193,8 +200,7 @@ const Analyzer = {
     const ring = $('#gauge-ring');
     const circumference = 326.7;
     ring.style.stroke = scoreColor(r.score);
-    // Force reflow so the transition replays on repeat runs
-    ring.getBoundingClientRect();
+    ring.getBoundingClientRect(); // force reflow so the transition replays
     ring.style.strokeDashoffset = circumference * (1 - r.score / 100);
     $('#gauge-label').style.color = scoreColor(r.score);
     $('#gauge-verdict').textContent = scoreLabel(r.score);
@@ -212,7 +218,7 @@ const Analyzer = {
     // --- Review (double-check) section ---
     $('#review-list').innerHTML = r.review.map(item => `
       <li class="p-4 rounded-xl bg-amber-50 border border-amber-200">
-        <p class="font-semibold text-amber-900">⚠️ ${item.clause}</p>
+        <p class="font-semibold text-amber-900">${ICONS.warn}${item.clause}</p>
         <p class="text-sm text-amber-800 mt-1">${item.note}</p>
       </li>`).join('');
 
@@ -220,11 +226,11 @@ const Analyzer = {
     const flags = $('#redflag-list');
     if (r.redFlags.length === 0) {
       flags.innerHTML = `<li class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium">
-        ✅ No critical red flags detected.</li>`;
+        ${ICONS.check}No critical red flags detected.</li>`;
     } else {
       flags.innerHTML = r.redFlags.map(item => `
         <li class="p-4 rounded-xl bg-red-50 border border-red-200">
-          <p class="font-semibold text-red-900">🚩 ${item.clause}</p>
+          <p class="font-semibold text-red-900">${ICONS.flag}${item.clause}</p>
           <p class="text-sm text-red-800 mt-1">${item.note}</p>
         </li>`).join('');
     }
@@ -255,7 +261,7 @@ const Analyzer = {
 };
 
 /* ------------------------------------------------------------
-   Memory — saved-contracts history list
+   Memory, saved-contracts history list
    ------------------------------------------------------------ */
 const Memory = {
   init() {
@@ -264,7 +270,7 @@ const Memory = {
     list.innerHTML = MOCK_CONTRACTS.map(c => `
       <div class="lift flex items-center justify-between gap-4 p-4 sm:p-5 bg-white rounded-2xl border border-slate-200">
         <div class="flex items-center gap-4 min-w-0">
-          <div class="shrink-0 w-11 h-11 rounded-xl brand-gradient flex items-center justify-center text-white text-lg">📄</div>
+          <div class="icon-tile shrink-0 w-11 h-11 rounded-xl">${ICONS.doc}</div>
           <div class="min-w-0">
             <p class="font-semibold text-slate-800 truncate">${c.name}</p>
             <p class="text-sm text-slate-500">Analyzed ${new Date(c.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
@@ -281,7 +287,7 @@ const Memory = {
 };
 
 /* ------------------------------------------------------------
-   Compare — pick two contracts, view them side-by-side
+   Compare, pick two contracts, view them side by side
    ------------------------------------------------------------ */
 const Compare = {
   init() {
@@ -289,11 +295,10 @@ const Compare = {
     const selB = $('#compare-b');
     if (!selA) return;
 
-    // Populate both dropdowns from the shared Memory list
     const opts = MOCK_CONTRACTS.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     selA.innerHTML = opts;
     selB.innerHTML = opts;
-    selB.selectedIndex = Math.min(1, MOCK_CONTRACTS.length - 1); // default to a different doc
+    selB.selectedIndex = Math.min(1, MOCK_CONTRACTS.length - 1);
 
     $('#compare-btn').addEventListener('click', () => this.render(selA.value, selB.value));
   },
@@ -315,9 +320,9 @@ const Compare = {
         <p class="text-sm font-medium mb-4" style="color:${scoreColor(c.score)}">${scoreLabel(c.score)}</p>
         <p class="text-xs uppercase tracking-wide text-slate-400 font-semibold mb-2">Flagged clauses</p>
         <ul class="space-y-2">
-          ${[...c.redFlags.map(f => `<li class="diff-conflict text-sm p-2 pl-3 rounded-r-lg text-red-900">🚩 ${f.clause}</li>`),
-             ...c.review.map(f => `<li class="text-sm p-2 pl-3 rounded-r-lg bg-amber-50 text-amber-900 border-l-[3px] border-amber-400">⚠️ ${f.clause}</li>`)]
-            .join('') || '<li class="diff-ok text-sm p-2 pl-3 rounded-r-lg bg-emerald-50 text-emerald-800">✅ Clean</li>'}
+          ${[...c.redFlags.map(f => `<li class="diff-conflict text-sm p-2 pl-3 rounded-r-lg text-red-900">${ICONS.flag}${f.clause}</li>`),
+             ...c.review.map(f => `<li class="text-sm p-2 pl-3 rounded-r-lg bg-amber-50 text-amber-900 border-l-[3px] border-amber-400">${ICONS.warn}${f.clause}</li>`)]
+            .join('') || `<li class="diff-ok text-sm p-2 pl-3 rounded-r-lg bg-emerald-50 text-emerald-800">${ICONS.check}Clean</li>`}
         </ul>
       </div>`;
 
@@ -337,26 +342,28 @@ const Compare = {
 };
 
 /* ------------------------------------------------------------
-   Nav — mobile menu + active-section highlighting
+   Nav, mobile menu plus active-section highlighting
    ------------------------------------------------------------ */
 const Nav = {
   init() {
-    // Mobile hamburger toggle
     const btn  = $('#menu-btn');
     const menu = $('#mobile-menu');
     btn?.addEventListener('click', () => menu.classList.toggle('hidden'));
     $$('#mobile-menu a').forEach(a =>
       a.addEventListener('click', () => menu.classList.add('hidden')));
 
-    // Highlight the nav link of the section in view
-    if (!('IntersectionObserver' in window)) return; // graceful degrade
+    // Highlight the nav link of the section in view (single-page anchors only)
+    if (!('IntersectionObserver' in window)) return;
     const sections = $$('section[id]');
     const links    = $$('.nav-link');
+    if (!sections.length) return;
     const spy = new IntersectionObserver(entries => {
       entries.forEach(e => {
         if (!e.isIntersecting) return;
-        links.forEach(l =>
-          l.classList.toggle('active', l.getAttribute('href') === `#${e.target.id}`));
+        links.forEach(l => {
+          const href = l.getAttribute('href') || '';
+          l.classList.toggle('active', href.endsWith(`#${e.target.id}`));
+        });
       });
     }, { rootMargin: '-40% 0px -55% 0px' });
     sections.forEach(s => spy.observe(s));
@@ -364,7 +371,7 @@ const Nav = {
 };
 
 /* ------------------------------------------------------------
-   Reveal — fade-in sections as they scroll into view
+   Reveal, fade-in sections as they scroll into view
    ------------------------------------------------------------ */
 const Reveal = {
   init() {

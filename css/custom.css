@@ -1,48 +1,114 @@
 /* ============================================================
-   DocuScan — custom styles (everything Tailwind CDN can't do)
+   DocuScan design system
    Palette derived from assets/logo.svg:
-     Brand blue  #3b82f6   (gradient start)
-     Brand teal  #0ea5a4   (gradient end)
-     Flag red    #ef4444   (red-flag accent)
-     Ink         #0b3b5e   (shadow / deep navy)
-     Paper       #eef2f7   (light surface)
+     Brand blue  #3b82f6  (gradient start)
+     Brand teal  #0ea5a4  (gradient end)
+     Flag red    #ef4444  (red-flag accent)
+     Ink         #0b3b5e  (deep navy)
+     Paper       #eef2f7  (light surface)
    ============================================================ */
+
+:root {
+  --brand:        #2563eb;
+  --brand-start:  #3b82f6;
+  --brand-end:    #0ea5a4;
+  --accent:       #0d9488;
+  --ink:          #0b2540;
+  --shadow-sm:    0 1px 2px rgba(11, 37, 64, 0.06), 0 1px 3px rgba(11, 37, 64, 0.10);
+  --shadow-md:    0 4px 12px -2px rgba(11, 37, 64, 0.10), 0 2px 6px -2px rgba(11, 37, 64, 0.08);
+  --shadow-lg:    0 24px 48px -16px rgba(11, 37, 64, 0.18), 0 8px 20px -12px rgba(11, 37, 64, 0.12);
+  --ring:         0 0 0 4px rgba(37, 99, 235, 0.14);
+}
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 5rem; /* keep anchors clear of the fixed nav */
+  scroll-padding-top: 5rem;
 }
 
 body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Tighter, more confident headings */
+h1, h2, h3 { letter-spacing: -0.02em; }
 
 /* ---- Brand gradient helpers ---- */
 .brand-gradient {
-  background-image: linear-gradient(135deg, #3b82f6 0%, #0ea5a4 100%);
+  background-image: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
 }
 .brand-gradient-text {
-  background-image: linear-gradient(135deg, #3b82f6 0%, #0ea5a4 100%);
+  background-image: linear-gradient(120deg, var(--brand-start) 0%, var(--brand-end) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+/* ---- Reusable buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  cursor: pointer;
+}
+.btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+.btn-primary {
+  background-image: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+
+.btn-secondary {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid #cbd5e1;
+  box-shadow: var(--shadow-sm);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+
+/* ---- Icon sizing ---- */
+.icon { flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Icon tile (feature cards / headings) */
+.icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background-image: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  box-shadow: var(--shadow-md);
+}
+
+/* ---- Cards ---- */
+.card {
+  background: #fff;
+  border: 1px solid #e7edf3;
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+.lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: #d7e1ea;
+}
+
 /* ---- Scroll-reveal animation ---- */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(20px);
   transition: opacity 0.6s ease, transform 0.6s ease;
 }
-.reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
+.reveal.is-visible { opacity: 1; transform: translateY(0); }
 
 /* ---- Dashboard tab panels ---- */
-.tab-panel {
-  display: none;
-}
+.tab-panel { display: none; }
 .tab-panel.active {
   display: block;
   animation: panelIn 0.35s ease both;
@@ -53,27 +119,23 @@ body {
 }
 
 /* ---- Tab buttons ---- */
-.tab-btn {
-  transition: color 0.2s ease, background-color 0.2s ease;
-}
+.tab-btn { transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease; }
 .tab-btn.active {
-  background-image: linear-gradient(135deg, #3b82f6 0%, #0ea5a4 100%);
-  color: #ffffff;
+  background-image: linear-gradient(135deg, var(--brand-start) 0%, var(--brand-end) 100%);
+  color: #fff;
+  box-shadow: var(--shadow-md);
 }
 
 /* ---- Upload drop zone ---- */
-.dropzone {
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
-}
+.dropzone { transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease; }
 .dropzone.dragover {
-  border-color: #0ea5a4;
-  background-color: rgba(14, 165, 164, 0.06);
+  border-color: var(--accent);
+  background-color: rgba(13, 148, 136, 0.06);
   transform: scale(1.01);
 }
 
 /* ---- Circular safety gauge ----
-   The ring is an SVG circle: r=52 → circumference ≈ 326.7.
-   JS animates stroke-dashoffset from 326.7 down to the score. */
+   r=52 -> circumference 326.7. JS animates stroke-dashoffset. */
 .gauge-ring {
   stroke-dasharray: 326.7;
   stroke-dashoffset: 326.7;
@@ -83,53 +145,42 @@ body {
 }
 
 /* ---- Fake analysis progress bar ---- */
-.progress-bar {
-  transition: width 0.3s ease;
-}
+.progress-bar { transition: width 0.3s ease; }
 
 /* ---- Nav: active link underline ---- */
-.nav-link {
-  position: relative;
-}
+.nav-link { position: relative; }
 .nav-link::after {
   content: '';
   position: absolute;
   left: 0;
-  bottom: -4px;
+  bottom: -6px;
   width: 0;
   height: 2px;
-  background-image: linear-gradient(90deg, #3b82f6, #0ea5a4);
+  border-radius: 2px;
+  background-image: linear-gradient(90deg, var(--brand-start), var(--brand-end));
   transition: width 0.25s ease;
 }
 .nav-link:hover::after,
-.nav-link.active::after {
-  width: 100%;
-}
-
-/* ---- Card hover lift ---- */
-.lift {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 40px -12px rgba(11, 59, 94, 0.25);
-}
+.nav-link.active::after { width: 100%; }
 
 /* ---- Compare view: highlight conflicting rows ---- */
 .diff-conflict {
   background-color: rgba(239, 68, 68, 0.07);
   border-left: 3px solid #ef4444;
 }
-.diff-ok {
-  border-left: 3px solid #10b981;
-}
+.diff-ok { border-left: 3px solid #10b981; }
 
-/* ---- Toast (Share / Link feedback) ---- */
-#toast {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
+/* ---- Toast ---- */
+#toast { transition: opacity 0.3s ease, transform 0.3s ease; }
 #toast.hidden-toast {
   opacity: 0;
   transform: translateY(12px);
   pointer-events: none;
+}
+
+/* ---- Subtle section grid backdrop ---- */
+.hero-grid {
+  background-image:
+    radial-gradient(60rem 40rem at 70% -10%, rgba(59, 130, 246, 0.10), transparent 60%),
+    radial-gradient(50rem 40rem at 0% 20%, rgba(14, 165, 164, 0.08), transparent 55%);
 }

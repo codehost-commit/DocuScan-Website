@@ -28,7 +28,7 @@ const MOCK_CONTRACTS = [
     date: '2026-06-28',
     score: 87,
     title: 'Independent Contractor Design Services Agreement',
-    parties: ['Rakesh Awasthi (Contractor)', 'Northwind Studios LLC (Client)'],
+    parties: ['Nadia Brandt (Contractor)', 'Northwind Studios LLC (Client)'],
     dates: { effective: 'Jul 1, 2026', term: '12 months', renewal: 'Manual renewal' },
     review: [
       { clause: 'Payment terms: Net 45', note: 'Longer than the industry-standard Net 30. Consider negotiating.' },

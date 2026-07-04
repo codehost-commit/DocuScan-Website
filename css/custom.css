@@ -184,3 +184,149 @@ h1, h2, h3 { letter-spacing: -0.02em; }
     radial-gradient(60rem 40rem at 70% -10%, rgba(59, 130, 246, 0.10), transparent 60%),
     radial-gradient(50rem 40rem at 0% 20%, rgba(14, 165, 164, 0.08), transparent 55%);
 }
+
+/* ============================================================
+   CONTRACT SHOWCASE, 3D cover-flow of annotated documents
+   ============================================================ */
+.cf-clip { overflow: hidden; padding: 8px 0; }  /* clips fanned pages before they reach the panel */
+.cf-stage {
+  position: relative;
+  height: 680px;
+  perspective: 1800px;
+  transform-style: preserve-3d;
+}
+.cf-slide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 384px;
+  height: 498px;                 /* 8.5 x 11 ratio (0.773) */
+  margin: -249px 0 0 -192px;
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.6s ease, filter 0.6s ease;
+  cursor: pointer;
+  will-change: transform;
+}
+@media (max-width: 640px) {
+  .cf-stage { height: 520px; }
+  .cf-slide { width: 300px; height: 388px; margin: -194px 0 0 -150px; }
+}
+
+/* The document "page" itself */
+.cf-doc {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  box-shadow: var(--shadow-lg);
+  padding: 30px 32px;
+  overflow: hidden;
+  font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  color: #1f2937;
+  font-size: 8.4px;
+  line-height: 1.52;
+  position: relative;
+}
+.cf-slide.is-active .cf-doc {
+  /* Font size for the centered doc is set by JS (fitActive) so the whole page
+     always fits without clipping, whatever the contract length. */
+  box-shadow: 0 40px 80px -24px rgba(11, 37, 64, 0.35), 0 12px 28px -12px rgba(11, 37, 64, 0.25);
+}
+.cf-doc-inner { transform-origin: top center; }
+@media (max-width: 640px) {
+  .cf-doc { font-size: 6.6px; padding: 22px 24px; }
+}
+
+.doc-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.5em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.doc-sub { text-align: center; font-size: 0.95em; color: #64748b; margin-bottom: 11px; }
+.doc-recital { text-align: justify; margin-bottom: 8px; }
+.doc-clause  { text-align: justify; margin-bottom: 6px; }
+.doc-num, .doc-clause strong { font-weight: 700; color: #0f172a; }
+
+/* Highlight bands, matched to the app's color logic */
+mark.hl { border-radius: 2px; padding: 0.5px 1.5px; color: inherit; }
+.hl-red   { background: #fecaca; box-shadow: inset 2.5px 0 0 #ef4444; }
+.hl-amber { background: #fde68a; box-shadow: inset 2.5px 0 0 #f59e0b; }
+.hl-green { background: #bbf7d0; box-shadow: inset 2.5px 0 0 #10b981; }
+
+/* Signature block */
+.doc-sig { display: flex; gap: 26px; margin-top: 18px; }
+.sig-col { flex: 1; }
+.sig-line { border-bottom: 1px solid #334155; height: 22px; }
+.sig-label { font-size: 0.85em; color: #64748b; margin-top: 3px; }
+.doc-foot { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8em; color: #94a3b8; letter-spacing: 0.08em; }
+
+/* Type tag under the active document */
+.cf-type {
+  position: absolute;
+  bottom: -34px;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  background-image: linear-gradient(135deg, var(--brand-start), var(--brand-end));
+  padding: 5px 14px;
+  border-radius: 9999px;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+.cf-slide.is-active .cf-type { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Controls */
+.cf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  cursor: pointer;
+}
+.cf-btn:hover { transform: translateY(-1px); border-color: var(--accent); color: var(--accent); }
+.cf-dot { width: 8px; height: 8px; border-radius: 9999px; background: #cbd5e1; transition: all 0.25s ease; cursor: pointer; }
+.cf-dot.active { width: 26px; background-image: linear-gradient(90deg, var(--brand-start), var(--brand-end)); }
+
+/* Results panel findings */
+.cf-group-h {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+.cf-group-h.red { color: #dc2626; }
+.cf-group-h.amber { color: #d97706; }
+.cf-group-h.green { color: #059669; }
+.cf-count {
+  margin-left: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #475569;
+}
+.cf-item { font-size: 0.82rem; line-height: 1.35; padding: 7px 11px; border-radius: 9px; }
+.red-item   { background: #fef2f2; color: #7f1d1d; border-left: 3px solid #ef4444; }
+.amber-item { background: #fffbeb; color: #78350f; border-left: 3px solid #f59e0b; }
+.green-item { background: #ecfdf5; color: #065f46; border-left: 3px solid #10b981; }

@@ -118,40 +118,147 @@
       <div class="text-center mb-14 reveal">
         <p class="text-sm font-bold uppercase tracking-widest text-accent mb-3">What it does</p>
         <h2 class="text-3xl sm:text-4xl font-extrabold text-ink">A full legal-triage toolkit</h2>
-        <p class="mt-3 text-slate-500 max-w-xl mx-auto">Four things DocuScan does well, so you know what you are signing.</p>
+        <p class="mt-3 text-slate-500 max-w-xl mx-auto">Everything DocuScan does, so you know exactly what you are signing.</p>
       </div>
 
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="card lift reveal p-6">
-          <div class="icon-tile w-12 h-12 rounded-xl mb-5">
-            <svg class="icon w-6 h-6" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-          </div>
-          <h3 class="font-bold text-ink mb-1.5">Red-flag detection</h3>
-          <p class="text-sm text-slate-500 leading-relaxed">Non-competes, uncapped liability, auto-renewals. 41 clause categories flagged instantly.</p>
+      <div class="grid lg:grid-cols-5 gap-6 items-stretch reveal">
+
+        <!-- Feature nav -->
+        <div class="lg:col-span-2 flex flex-col gap-3">
+          <button class="feat-btn active" data-feat="redflag">
+            <span class="icon-tile w-11 h-11 rounded-xl shrink-0">
+              <svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block font-bold text-ink text-sm">Red-flag detection</span>
+              <span class="block text-xs text-slate-500 mt-0.5">41 clause categories, flagged instantly</span>
+            </span>
+            <svg class="feat-chevron icon w-4 h-4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <button class="feat-btn" data-feat="score">
+            <span class="icon-tile w-11 h-11 rounded-xl shrink-0">
+              <svg class="icon w-5 h-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block font-bold text-ink text-sm">Safety score</span>
+              <span class="block text-xs text-slate-500 mt-0.5">A single good-to-go percentage</span>
+            </span>
+            <svg class="feat-chevron icon w-4 h-4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <button class="feat-btn" data-feat="compare">
+            <span class="icon-tile w-11 h-11 rounded-xl shrink-0">
+              <svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M8 21h8"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/></svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block font-bold text-ink text-sm">Compare contracts</span>
+              <span class="block text-xs text-slate-500 mt-0.5">Two offers, side by side</span>
+            </span>
+            <svg class="feat-chevron icon w-4 h-4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <button class="feat-btn" data-feat="private">
+            <span class="icon-tile w-11 h-11 rounded-xl shrink-0">
+              <svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block font-bold text-ink text-sm">On-device and free</span>
+              <span class="block text-xs text-slate-500 mt-0.5">Runs locally, open source</span>
+            </span>
+            <svg class="feat-chevron icon w-4 h-4" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
 
-        <div class="card lift reveal p-6">
-          <div class="icon-tile w-12 h-12 rounded-xl mb-5">
-            <svg class="icon w-6 h-6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+        <!-- Feature panels -->
+        <div class="lg:col-span-3 card p-6 sm:p-8 flex lg:min-h-[360px]">
+          <!-- redflag -->
+          <div class="feat-panel active w-full" data-feat="redflag">
+            <p class="text-xs font-bold uppercase tracking-widest text-accent mb-2">Detection</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-ink">Reads every clause, flags the dangerous ones</h3>
+            <p class="text-slate-500 mt-3 leading-relaxed">A legal model fine-tuned on thousands of annotated contracts scans each clause and flags what puts you at risk: non-competes, uncapped liability, one-sided termination, and 38 more. Every flag links back to the exact sentence that triggered it.</p>
+            <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4" style="font-family:'Source Serif 4',Georgia,serif;">
+              <p class="text-[13px] leading-relaxed text-slate-700"><strong>4. Non-Competition.</strong> <mark class="hl hl-red">For three (3) years following separation, Employee shall not, anywhere in the world, engage in any competing business.</mark></p>
+              <p class="text-[13px] leading-relaxed text-slate-700 mt-2"><strong>5. Liability.</strong> <mark class="hl hl-amber">Employee bears liability for any and all losses, without cap.</mark></p>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-red-50 text-red-700 border border-red-100">
+                <svg class="icon w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                Non-compete flagged
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">Uncapped liability</span>
+            </div>
           </div>
-          <h3 class="font-bold text-ink mb-1.5">Safety score</h3>
-          <p class="text-sm text-slate-500 leading-relaxed">One clear "good to go" percentage that tells you how safe a contract is to sign.</p>
-        </div>
 
-        <div class="card lift reveal p-6">
-          <div class="icon-tile w-12 h-12 rounded-xl mb-5">
-            <svg class="icon w-6 h-6" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <!-- score -->
+          <div class="feat-panel w-full" data-feat="score">
+            <p class="text-xs font-bold uppercase tracking-widest text-accent mb-2">Scoring</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-ink">One number you can actually trust</h3>
+            <p class="text-slate-500 mt-3 leading-relaxed">Every flag is weighted by severity and rolled into a single good-to-go percentage, so you get an instant read before you sign. Green is clear, amber means read carefully, red means get advice.</p>
+            <div class="mt-6 flex items-center gap-6">
+              <div class="relative w-28 h-28 shrink-0">
+                <svg viewBox="0 0 120 120" class="w-full h-full">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="58.8" transform="rotate(-90 60 60)"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="text-2xl font-black text-ink">82%</span>
+                  <span class="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Good to go</span>
+                </div>
+              </div>
+              <div class="space-y-2.5 flex-1">
+                <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-sm text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>Critical</span><span class="font-bold text-ink text-sm">2</span></div>
+                <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-sm text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>Review</span><span class="font-bold text-ink text-sm">3</span></div>
+                <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-sm text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Clear</span><span class="font-bold text-ink text-sm">6</span></div>
+              </div>
+            </div>
           </div>
-          <h3 class="font-bold text-ink mb-1.5">Private by design</h3>
-          <p class="text-sm text-slate-500 leading-relaxed">The neural model runs entirely on your device, so analyzing a contract never requires uploading it to a server.</p>
-        </div>
 
-        <div class="card lift reveal p-6">
-          <div class="icon-tile w-12 h-12 rounded-xl mb-5">
-            <svg class="icon w-6 h-6" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>
+          <!-- compare -->
+          <div class="feat-panel w-full" data-feat="compare">
+            <p class="text-xs font-bold uppercase tracking-widest text-accent mb-2">Comparison</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-ink">Two offers, side by side</h3>
+            <p class="text-slate-500 mt-3 leading-relaxed">Line up two versions or competing offers and DocuScan compares their scores, flags, and conflicting clauses, so the safer choice is obvious in seconds.</p>
+            <div class="mt-5 grid grid-cols-2 gap-4">
+              <div class="rounded-xl border-2 border-emerald-200 bg-emerald-50/40 p-4">
+                <p class="text-xs text-slate-500 truncate">Offer A</p>
+                <p class="text-3xl font-black text-emerald-600 mt-1">82%</p>
+                <p class="text-xs font-semibold text-emerald-700 mt-1">Good to go</p>
+                <p class="text-xs text-slate-500 mt-3">1 flag, minor</p>
+              </div>
+              <div class="rounded-xl border border-slate-200 p-4">
+                <p class="text-xs text-slate-500 truncate">Offer B</p>
+                <p class="text-3xl font-black text-amber-600 mt-1">61%</p>
+                <p class="text-xs font-semibold text-amber-700 mt-1">Sign with caution</p>
+                <p class="text-xs text-slate-500 mt-3">Auto-renewal trap</p>
+              </div>
+            </div>
+            <div class="mt-3 text-sm p-3 rounded-lg bg-blue-50 border border-blue-100 text-blue-900"><strong>Offer A</strong> scores 21 points higher and avoids the auto-renewal trap.</div>
           </div>
-          <h3 class="font-bold text-ink mb-1.5">Free, actually free</h3>
-          <p class="text-sm text-slate-500 leading-relaxed">No paid features, no subscriptions, no ads. Every feature ships to every user.</p>
+
+          <!-- private -->
+          <div class="feat-panel w-full" data-feat="private">
+            <p class="text-xs font-bold uppercase tracking-widest text-accent mb-2">Privacy and price</p>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-ink">Runs on your machine, not a server</h3>
+            <p class="text-slate-500 mt-3 leading-relaxed">The neural model runs locally on your CPU through fast ONNX inference. Scanning a contract never uploads it, there is no account to create, and the whole app is open source under GPL-3.0.</p>
+            <div class="mt-6 flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div class="text-center flex-1">
+                <div class="icon-tile w-11 h-11 rounded-xl mx-auto"><svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <p class="text-xs font-semibold text-slate-600 mt-2">Your contract</p>
+              </div>
+              <svg class="icon w-5 h-5 text-slate-300 shrink-0" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              <div class="text-center flex-1">
+                <div class="icon-tile w-11 h-11 rounded-xl mx-auto"><svg class="icon w-5 h-5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+                <p class="text-xs font-semibold text-slate-600 mt-2">Your device</p>
+              </div>
+              <svg class="icon w-5 h-5 text-slate-300 shrink-0" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              <div class="text-center flex-1">
+                <div class="icon-tile w-11 h-11 rounded-xl mx-auto"><svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                <p class="text-xs font-semibold text-slate-600 mt-2">Result</p>
+              </div>
+            </div>
+            <p class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500"><svg class="icon w-3.5 h-3.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>No server, no account, no cost</p>
+          </div>
         </div>
       </div>
     </div>
@@ -263,5 +370,6 @@
 
   <script src="js/app.js"></script>
   <script src="js/showcase.js"></script>
+  <script src="js/features.js"></script>
 </body>
 </html>

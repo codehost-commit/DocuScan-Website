@@ -186,12 +186,41 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 }
 
 /* ============================================================
+   FEATURE EXPLORER (nav list + deep panel)
+   ============================================================ */
+.feat-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e7edf3;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+  cursor: pointer;
+}
+.feat-btn:hover { border-color: #cfe0ee; transform: translateY(-1px); }
+.feat-btn.active {
+  border-color: transparent;
+  background-image: linear-gradient(135deg, rgba(59, 130, 246, 0.10), rgba(14, 165, 164, 0.10));
+  box-shadow: var(--shadow-md);
+}
+.feat-chevron { margin-left: auto; color: #cbd5e1; transition: transform 0.2s ease, color 0.2s ease; }
+.feat-btn.active .feat-chevron { color: var(--accent); transform: translateX(2px); }
+
+.feat-panel { display: none; }
+.feat-panel.active { display: block; animation: panelIn 0.35s ease both; }
+
+/* ============================================================
    CONTRACT SHOWCASE, 3D cover-flow of annotated documents
    ============================================================ */
-.cf-clip { overflow: hidden; padding: 8px 0; }  /* clips fanned pages before they reach the panel */
+.cf-clip { overflow: hidden; }  /* clips fanned pages before they reach the panel */
 .cf-stage {
   position: relative;
-  height: 680px;
+  height: 740px;  /* tall enough that the centered card's shadow fits, so the clip never slices it */
   perspective: 1800px;
   transform-style: preserve-3d;
 }
@@ -207,7 +236,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
   will-change: transform;
 }
 @media (max-width: 640px) {
-  .cf-stage { height: 520px; }
+  .cf-stage { height: 640px; }
   .cf-slide { width: 300px; height: 388px; margin: -194px 0 0 -150px; }
 }
 
@@ -230,7 +259,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .cf-slide.is-active .cf-doc {
   /* Font size for the centered doc is set by JS (fitActive) so the whole page
      always fits without clipping, whatever the contract length. */
-  box-shadow: 0 40px 80px -24px rgba(11, 37, 64, 0.35), 0 12px 28px -12px rgba(11, 37, 64, 0.25);
+  box-shadow: 0 26px 50px -18px rgba(11, 37, 64, 0.30), 0 8px 18px -10px rgba(11, 37, 64, 0.16);
 }
 .cf-doc-inner { transform-origin: top center; }
 @media (max-width: 640px) {

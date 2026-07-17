@@ -113,7 +113,7 @@
       <div class="flex items-center justify-center gap-3 mt-3 text-[11px] font-semibold text-slate-400">
         <span>0%</span>
         <div class="h-2 w-40 rounded-full" style="background:linear-gradient(90deg,#eff6ff,#1e3a8a)"></div>
-        <span id="legend-max">100%</span>
+        <span>100%</span>
       </div>
     </div>
 
@@ -393,7 +393,6 @@ function paintGeo() {
   const withData = Object.keys(pcts).filter(c => pcts[c] > 0);
   const max = withData.length ? Math.max(...withData.map(c => pcts[c])) : 0;
 
-  $('#legend-max').textContent = max ? `${max.toFixed(1)}%` : '0%';
   const assigned = geoAssigned();
   $('#geo-total').textContent =
     `${geoTotal().toLocaleString('en-US')} downloads` +
@@ -422,17 +421,19 @@ function paintGeo() {
     list.appendChild(row);
   });
 
-  paintMap(pcts, max);
+  paintMap(pcts);
 }
 
 /* Shade the map. We set each region's fill directly instead of going through
-   series.setValues(), which requires a scale object and throws without one. */
-function paintMap(pcts, max) {
+   series.setValues(), which requires a scale object and throws without one.
+   Colours run against a fixed 0-100% so a country's shade means the same thing
+   every time, and matches the legend. */
+function paintMap(pcts) {
   if (!worldMap || !worldMap.regions) return;
   Object.keys(worldMap.regions).forEach(code => {
     const region = worldMap.regions[code];
     if (!region || !region.element) return;
-    const color = colorFor(pcts[code] || 0, max);
+    const color = colorFor(pcts[code] || 0, 100);
     try {
       region.element.setStyle('fill', color);
     } catch (e) {

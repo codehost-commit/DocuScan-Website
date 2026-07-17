@@ -1,8 +1,8 @@
 /* ============================================================
-   DocuScan, showcase.js
+   DocuClerk, showcase.js
    Auto-rotating 3D cover-flow of annotated sample contracts.
    All contract text below is original, generic boilerplate
-   written purely to illustrate how DocuScan marks up a page,
+   written purely to illustrate how DocuClerk marks up a page,
    not real or proprietary agreements.
    Relies on scoreColor(), scoreLabel(), and ICONS from app.js.
    ============================================================ */

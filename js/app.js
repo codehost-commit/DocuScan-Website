@@ -1,5 +1,5 @@
 /* ============================================================
-   DocuScan, app.js
+   DocuClerk, app.js
    Clean, modular vanilla JS. Each feature lives in its own
    module object with an init() method, wired up at the bottom.
    Swap MOCK_CONTRACTS for real API data later.
@@ -176,7 +176,7 @@ const Analyzer = {
     const steps = [
       [18, 'Extracting text'],
       [42, 'Chunking clauses'],
-      [68, 'Running neural model'],
+      [68, 'Scanning clauses'],
       [88, 'Scoring risks'],
       [100, 'Building report']
     ];
@@ -395,11 +395,16 @@ const Reveal = {
    Boot
    ------------------------------------------------------------ */
 document.addEventListener('DOMContentLoaded', () => {
-  Toast.init();
-  Tabs.init();
-  Analyzer.init();
-  Memory.init();
-  Compare.init();
-  Nav.init();
-  Reveal.init();
+  // app.js is shared by index, about, and download. The dashboard modules only
+  // exist on index, so each init is isolated: a module that finds nothing on
+  // this page fails quietly instead of stopping the ones after it (notably
+  // Reveal, which every page needs to fade its content in).
+  const safe = fn => { try { fn(); } catch (e) { /* module not on this page */ } };
+  safe(() => Toast.init());
+  safe(() => Tabs.init());
+  safe(() => Analyzer.init());
+  safe(() => Memory.init());
+  safe(() => Compare.init());
+  safe(() => Nav.init());
+  safe(() => Reveal.init());
 });

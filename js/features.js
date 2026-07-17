@@ -1,5 +1,5 @@
 /* ============================================================
-   DocuScan, features.js
+   DocuClerk, features.js
    Feature explorer: click a feature in the nav to reveal its panel.
    ============================================================ */
 

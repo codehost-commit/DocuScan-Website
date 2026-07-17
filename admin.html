@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin | DocuClerk</title>
+
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand:  { DEFAULT: '#3b82f6', dark: '#2563eb' },
+            accent: { DEFAULT: '#0ea5a4', dark: '#0d9488' },
+            ink:    '#0b2540',
+            flag:   '#ef4444'
+          },
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="css/custom.css">
+</head>
+
+<body class="bg-slate-50 text-slate-600 antialiased">
+
+<!-- ============================ LOGIN GATE ============================ -->
+<div id="gate" class="min-h-screen flex items-center justify-center px-6">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <img src="assets/logo.svg" alt="" class="w-16 h-16 mx-auto rounded-2xl shadow-lg mb-4">
+      <h1 class="text-2xl font-extrabold text-ink">DocuClerk Admin</h1>
+      <p class="text-sm text-slate-400 mt-1">Internal analytics</p>
+    </div>
+    <form id="login-form" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Username</label>
+        <input id="u" type="text" autocomplete="off"
+               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+        <input id="p" type="password" autocomplete="off"
+               class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition">
+      </div>
+      <p id="gate-err" class="hidden text-sm text-flag font-medium"></p>
+      <button type="submit"
+              class="w-full py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold transition">
+        Sign in
+      </button>
+    </form>
+    <p class="text-center text-xs text-slate-400 mt-6">
+      Temporary credential gate. Not real security, replace before launch.
+    </p>
+  </div>
+</div>
+
+<!-- ============================ DASHBOARD ============================ -->
+<div id="panel" class="hidden max-w-5xl mx-auto px-6 py-10">
+
+  <div class="flex items-center gap-3 mb-8">
+    <img src="assets/logo.svg" alt="" class="w-9 h-9 rounded-lg">
+    <h1 class="text-3xl font-extrabold text-ink flex-1">Analytics</h1>
+    <button id="refresh" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:border-brand hover:text-brand text-sm font-semibold transition">
+      Refresh
+    </button>
+    <button id="logout" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:border-flag hover:text-flag text-sm font-semibold transition">
+      Sign out
+    </button>
+  </div>
+
+  <div id="edit-banner" class="hidden mb-6 px-5 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
+    Edit mode on. Change any value, click a day's bar to set that day, press
+    <strong>Shift + Q</strong> to spread MAU across the last 28 days, then press
+    <strong>Shift + \</strong> again to save.
+  </div>
+
+  <!-- primary stats -->
+  <div class="grid sm:grid-cols-3 gap-4 mb-4" id="cards-primary"></div>
+  <!-- derived stats -->
+  <div class="grid sm:grid-cols-2 gap-4 mb-8" id="cards-derived"></div>
+
+  <h2 class="text-lg font-bold text-ink mb-3">Entries, last 28 days</h2>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <div id="chart" class="flex items-end gap-1.5 h-56"></div>
+    <div id="chart-labels" class="flex gap-1.5 mt-2"></div>
+  </div>
+
+  <p id="status" class="text-sm text-slate-400 mt-5"></p>
+</div>
+
+<script>
+/* =========================================================================
+   DocuClerk web admin.
+   Mirrors the analytics screen in the desktop app: same Firestore documents,
+   same Shift+\ edit mode, same Shift+Q weighted MAU spread.
+   ========================================================================= */
+
+/* ---- TEMPORARY credential gate -------------------------------------------
+   This is checked in the browser, so anyone can read it in the page source.
+   It keeps casual visitors out, nothing more. Replace with the Firebase admin
+   sign-in (the same admins/{uid} check the desktop app uses) before launch. */
+const ADMIN_USER = 'ADMIN';
+const ADMIN_PASS = '12345678';
+
+const CFG = {
+  apiKey: 'AIzaSyCZCQ_mgF_JMcncbDLTT9Wbv1-jZhueV2Q',
+  projectId: 'docuscan-abd6a'
+};
+const DOCS = `projects/${CFG.projectId}/databases/(default)/documents`;
+const BASE = `https://firestore.googleapis.com/v1/${DOCS}`;
+const KEY  = `key=${CFG.apiKey}`;
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ---- Firestore REST helpers (mirrors firebasekit.py) ---- */
+function fsToObj(fields) {
+  const o = {};
+  for (const [k, v] of Object.entries(fields || {})) {
+    if ('integerValue' in v) o[k] = parseInt(v.integerValue, 10);
+    else if ('doubleValue' in v) o[k] = parseFloat(v.doubleValue);
+    else if ('stringValue' in v) o[k] = v.stringValue;
+    else if ('booleanValue' in v) o[k] = v.booleanValue;
+  }
+  return o;
+}
+function toFs(v) {
+  return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+}
+async function getDoc(path) {
+  const r = await fetch(`${BASE}/${path}?${KEY}`);
+  if (!r.ok) return {};
+  const j = await r.json();
+  return fsToObj(j.fields);
+}
+async function patchDoc(path, mapping) {
+  if (!Object.keys(mapping).length) return;
+  const mask = Object.keys(mapping)
+    .map(k => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+  const fields = {};
+  for (const [k, v] of Object.entries(mapping)) fields[k] = toFs(v);
+  const r = await fetch(`${BASE}/${path}?${mask}&${KEY}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields })
+  });
+  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+}
+async function commitIncrements(docPath, fields) {
+  const entries = Object.entries(fields).filter(([, v]) => v);
+  if (!entries.length) return;
+  const body = { writes: [{ transform: {
+    document: `${DOCS}/${docPath}`,
+    fieldTransforms: entries.map(([k, v]) => ({
+      fieldPath: k, increment: { integerValue: String(v) }
+    }))
+  } }] };
+  const r = await fetch(`https://firestore.googleapis.com/v1/${DOCS}:commit?${KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+}
+
+/* ---- date helpers ---- */
+const dayKey = d => d.getFullYear().toString()
+  + String(d.getMonth() + 1).padStart(2, '0')
+  + String(d.getDate()).padStart(2, '0');
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function last28() {
+  const out = [];
+  const today = new Date();
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    out.push({ key: dayKey(d), label: `${MONTHS[d.getMonth()]} ${d.getDate()}`, date: d });
+  }
+  return out;
+}
+
+/* ---- state ---- */
+const CARDS = [
+  { key: 'users',         label: 'Total users',           int: true,  group: 'primary' },
+  { key: 'contracts',     label: 'Contracts scanned',     int: true,  group: 'primary' },
+  { key: 'entries',       label: 'App entries (MAU)',     int: true,  group: 'primary' },
+  { key: 'avg_contracts', label: 'Avg contracts per user', int: false, group: 'derived' },
+  { key: 'avg_entries',   label: 'Avg entries per user',   int: false, group: 'derived' }
+];
+let stats = {};        // last values loaded from Firebase
+let daily = [];        // [{key,label,entries}]
+let dailyEdits = {};   // dayKey -> entries (pending, unsaved)
+let editMode = false;
+
+/* ---- rendering ---- */
+function fmt(card, v) {
+  if (v === undefined || v === null || isNaN(v)) v = 0;
+  return card.int ? Math.round(v).toLocaleString('en-US') : Number(v).toFixed(1);
+}
+function buildCards() {
+  for (const group of ['primary', 'derived']) {
+    const host = $(`#cards-${group}`);
+    host.innerHTML = '';
+    CARDS.filter(c => c.group === group).forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm p-5';
+      el.innerHTML = `
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${c.label}</p>
+        <p class="num text-3xl font-extrabold text-ink mt-2">0</p>
+        <input class="inp hidden w-full mt-2 px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50
+                      text-2xl font-extrabold text-ink outline-none focus:ring-2 focus:ring-amber-200">`;
+      el.querySelector('.inp').dataset.key = c.key;
+      host.appendChild(el);
+      c.el = el;
+    });
+  }
+}
+function paintCards() {
+  CARDS.forEach(c => c.el.querySelector('.num').textContent = fmt(c, stats[c.key]));
+}
+function chartData() {
+  return daily.map(d => ({ ...d, entries: (d.key in dailyEdits) ? dailyEdits[d.key] : d.entries }));
+}
+function paintChart() {
+  const data = chartData();
+  const max = Math.max(1, ...data.map(d => d.entries));
+  const chart = $('#chart');
+  const labels = $('#chart-labels');
+  chart.innerHTML = '';
+  labels.innerHTML = '';
+  data.forEach((d, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex-1 flex flex-col justify-end h-full group cursor-pointer';
+    wrap.title = `${d.label}: ${d.entries}`;
+    const edited = d.key in dailyEdits;
+    const bar = document.createElement('div');
+    bar.className = `rounded-t-md transition-all ${edited ? 'bg-amber-400' : 'bg-brand'} group-hover:opacity-80`;
+    bar.style.height = `${Math.max(2, (d.entries / max) * 100)}%`;
+    const val = document.createElement('div');
+    val.className = 'text-[10px] font-bold text-slate-400 text-center mb-1 opacity-0 group-hover:opacity-100 transition';
+    val.textContent = d.entries;
+    wrap.appendChild(val);
+    wrap.appendChild(bar);
+    wrap.addEventListener('click', () => editDay(d));
+    chart.appendChild(wrap);
+
+    const lab = document.createElement('div');
+    lab.className = 'flex-1 text-[9px] text-slate-400 text-center';
+    lab.textContent = (i % 4 === 0) ? d.label : '';
+    labels.appendChild(lab);
+  });
+}
+function editDay(d) {
+  if (!editMode) return;
+  const cur = (d.key in dailyEdits) ? dailyEdits[d.key] : d.entries;
+  const v = prompt(`Entries on ${d.label}`, cur);
+  if (v === null) return;
+  const n = parseInt(String(v).replace(/,/g, '').trim(), 10);
+  if (isNaN(n)) return;
+  dailyEdits[d.key] = Math.max(0, n);
+  paintChart();
+}
+
+/* ---- load ---- */
+async function refresh() {
+  $('#status').textContent = 'Loading...';
+  try {
+    const g = await getDoc('stats/global');
+    const users = g.users || 0, contracts = g.contracts || 0, entries = g.entries || 0;
+    stats = {
+      users, contracts, entries,
+      avg_contracts: ('avg_contracts' in g) ? g.avg_contracts : (users ? contracts / users : 0),
+      avg_entries:   ('avg_entries'   in g) ? g.avg_entries   : (users ? entries / users : 0)
+    };
+    const dd = await getDoc('stats/daily');
+    daily = last28().map(d => ({ ...d, entries: dd[`entries_${d.key}`] || 0 }));
+    dailyEdits = {};
+    paintCards();
+    paintChart();
+    $('#status').textContent = 'Up to date. Press Shift + \\ to edit.';
+  } catch (e) {
+    $('#status').textContent = `Load failed: ${e.message}`;
+  }
+}
+
+/* ---- edit mode (Shift + \) ---- */
+function toggleEdit() {
+  if (!editMode) {
+    editMode = true;
+    CARDS.forEach(c => {
+      const inp = c.el.querySelector('.inp');
+      inp.value = fmt(c, stats[c.key]).replace(/,/g, '');
+      inp.classList.remove('hidden');
+      c.el.querySelector('.num').classList.add('hidden');
+    });
+    $('#edit-banner').classList.remove('hidden');
+    paintChart();
+  } else {
+    saveEdits();
+  }
+}
+function exitEdit() {
+  editMode = false;
+  dailyEdits = {};
+  CARDS.forEach(c => {
+    c.el.querySelector('.inp').classList.add('hidden');
+    c.el.querySelector('.num').classList.remove('hidden');
+  });
+  $('#edit-banner').classList.add('hidden');
+}
+
+/* ---- Shift + Q: weekday-weighted spread (mirrors _weighted_distribution) ---- */
+function weightedDistribution(total, days) {
+  total = Math.max(0, Math.round(total));
+  const n = days.length;
+  const counts = new Array(n).fill(0);
+  if (!total || !n) return counts;
+  const weights = days.map(d => {
+    const wd = d.date.getDay();                       // 0 Sun .. 6 Sat
+    const base = (wd >= 1 && wd <= 5) ? 1.0 : 0.4;    // weekdays heavier
+    return base * (0.6 + Math.random() * 0.8);        // jitter 0.6 - 1.4
+  });
+  const cum = [];
+  let sum = 0;
+  weights.forEach(w => { sum += w; cum.push(sum); });
+  for (let i = 0; i < total; i++) {                   // dart-throwing, so days clump
+    const r = Math.random() * sum;
+    let idx = cum.findIndex(c => r <= c);
+    if (idx < 0) idx = n - 1;
+    counts[idx]++;
+  }
+  return counts;
+}
+function randomizeMau() {
+  if (!editMode) return;
+  const inp = CARDS.find(c => c.key === 'entries').el.querySelector('.inp');
+  let total = parseInt(String(inp.value).replace(/,/g, '').trim(), 10);
+  if (isNaN(total)) total = stats.entries || 0;
+  const days = last28();
+  const counts = weightedDistribution(total, days);
+  dailyEdits = {};
+  days.forEach((d, i) => dailyEdits[d.key] = counts[i]);
+  paintChart();
+  $('#status').textContent = `Spread ${total.toLocaleString('en-US')} entries across 28 days. Shift + \\ to save.`;
+}
+
+/* ---- random split of a total into n parts (mirrors _distribute) ---- */
+function distribute(total, n) {
+  total = Math.round(total);
+  n = Math.max(1, n);
+  if (total <= 0) return new Array(n).fill(0);
+  const cuts = Array.from({ length: n - 1 }, () => Math.floor(Math.random() * (total + 1))).sort((a, b) => a - b);
+  const parts = [];
+  let prev = 0;
+  cuts.forEach(c => { parts.push(c - prev); prev = c; });
+  parts.push(total - prev);
+  for (let i = parts.length - 1; i > 0; i--) {        // shuffle
+    const j = Math.floor(Math.random() * (i + 1));
+    [parts[i], parts[j]] = [parts[j], parts[i]];
+  }
+  return parts;
+}
+
+/* ---- save (mirrors _save_edits) ---- */
+async function saveEdits() {
+  const mapping = {};
+  CARDS.forEach(c => {
+    const raw = String(c.el.querySelector('.inp').value).replace(/,/g, '').trim();
+    const v = parseFloat(raw);
+    if (!isNaN(v)) mapping[c.key] = c.int ? Math.round(v) : v;
+  });
+
+  const newEntries   = mapping.entries   !== undefined ? mapping.entries   : (stats.entries || 0);
+  const newContracts = mapping.contracts !== undefined ? mapping.contracts : (stats.contracts || 0);
+  const diffE = Math.max(0, newEntries   - (stats.entries   || 0));
+  const diffC = Math.max(0, newContracts - (stats.contracts || 0));
+
+  const days = last28();
+  const edited = new Set(Object.keys(dailyEdits));
+  const openDays = days.filter(d => !edited.has(d.key));
+
+  const setFields = {};
+  for (const [k, v] of Object.entries(dailyEdits)) setFields[`entries_${k}`] = Math.round(v);
+
+  const addFields = {};
+  if (diffE && openDays.length) {
+    distribute(diffE, openDays.length).forEach((amt, i) => {
+      if (amt) addFields[`entries_${openDays[i].key}`] = amt;
+    });
+  }
+  if (diffC) {
+    distribute(diffC, days.length).forEach((amt, i) => {
+      if (amt) {
+        const k = `contracts_${days[i].key}`;
+        addFields[k] = (addFields[k] || 0) + amt;
+      }
+    });
+  }
+
+  $('#status').textContent = 'Saving...';
+  try {
+    await patchDoc('stats/global', mapping);
+    await patchDoc('stats/daily', setFields);
+    await commitIncrements('stats/daily', addFields);
+    exitEdit();
+    await refresh();
+    $('#status').textContent = 'Saved.';
+  } catch (e) {
+    $('#status').textContent = `Save failed: ${e.message}`;
+  }
+}
+
+/* ---- keys ---- */
+document.addEventListener('keydown', e => {
+  if ($('#panel').classList.contains('hidden')) return;
+  if (!e.shiftKey) return;
+  const k = e.key.toLowerCase();
+  if (k === '\\' || k === '|') { e.preventDefault(); toggleEdit(); }
+  else if (k === 'q' && editMode) { e.preventDefault(); randomizeMau(); }
+});
+
+/* ---- gate ---- */
+$('#login-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const ok = $('#u').value.trim() === ADMIN_USER && $('#p').value === ADMIN_PASS;
+  if (!ok) {
+    const err = $('#gate-err');
+    err.textContent = 'Wrong username or password.';
+    err.classList.remove('hidden');
+    return;
+  }
+  sessionStorage.setItem('dc_admin', '1');
+  openPanel();
+});
+$('#logout').addEventListener('click', () => {
+  sessionStorage.removeItem('dc_admin');
+  location.reload();
+});
+$('#refresh').addEventListener('click', refresh);
+
+function openPanel() {
+  $('#gate').classList.add('hidden');
+  $('#panel').classList.remove('hidden');
+  buildCards();
+  refresh();
+}
+if (sessionStorage.getItem('dc_admin') === '1') openPanel();
+</script>
+</body>
+</html>

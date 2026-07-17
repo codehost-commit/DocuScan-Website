@@ -347,23 +347,39 @@ async function refresh() {
    never disagree.
    ========================================================================= */
 let geoCounts = {};   // ISO code -> download count
+let geoKnown = [];    // codes already present in Firestore (so zeroing persists)
 let worldMap = null;
 
 const NAME_OF = {};
 if (typeof COUNTRIES !== 'undefined') COUNTRIES.forEach(c => NAME_OF[c.c] = c.n);
 
-const geoTotal = () => Object.values(geoCounts).reduce((a, b) => a + b, 0);
+/* Downloads == total users. Every country percentage is a share of that one
+   number, not of the countries recorded so far. So a country only lights up
+   once it has been given a share; an empty map with 5 users is correct. */
+const geoTotal = () => stats.users || 0;
 function geoPct(code) {
   const t = geoTotal();
   return t ? (geoCounts[code] || 0) / t * 100 : 0;
+}
+const geoAssigned = () =>
+  Object.keys(geoCounts).reduce((s, c) => s + geoPct(c), 0);
+
+/* Pale blue -> deep blue, scaled against the largest share on the map. */
+function colorFor(pct, max) {
+  if (!pct || !max) return '#eff6ff';
+  const t = Math.max(0, Math.min(1, pct / max));
+  const from = [239, 246, 255], to = [30, 58, 138];
+  const rgb = from.map((v, i) => Math.round(v + (to[i] - v) * t));
+  return '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
 async function refreshGeo() {
   try {
     geoCounts = await getDoc('stats/countries');
     for (const k of Object.keys(geoCounts)) {
-      if (typeof geoCounts[k] !== 'number' || geoCounts[k] < 0) delete geoCounts[k];
+      if (typeof geoCounts[k] !== 'number' || geoCounts[k] <= 0) delete geoCounts[k];
     }
+    geoKnown = Object.keys(geoCounts);
     paintGeo();
     $('#geo-status').textContent = '';
   } catch (e) {
@@ -374,14 +390,20 @@ async function refreshGeo() {
 function paintGeo() {
   const pcts = {};
   Object.keys(geoCounts).forEach(c => pcts[c] = geoPct(c));
-  const max = Math.max(1, ...Object.values(pcts));
-  $('#legend-max').textContent = `${max.toFixed(1)}%`;
-  $('#geo-total').textContent = `${geoTotal().toLocaleString('en-US')} downloads`;
+  const withData = Object.keys(pcts).filter(c => pcts[c] > 0);
+  const max = withData.length ? Math.max(...withData.map(c => pcts[c])) : 0;
+
+  $('#legend-max').textContent = max ? `${max.toFixed(1)}%` : '0%';
+  const assigned = geoAssigned();
+  $('#geo-total').textContent =
+    `${geoTotal().toLocaleString('en-US')} downloads` +
+    (assigned > 0 ? ` · ${assigned.toFixed(0)}% mapped` : '');
 
   if (worldMap) {
-    // Repaint every region: darker blue = larger share.
+    // Colours are computed here rather than via the library's scale, which
+    // silently does nothing when every value is 0 or all values are equal.
     const values = {};
-    Object.keys(pcts).forEach(c => values[c] = pcts[c]);
+    Object.keys(pcts).forEach(c => values[c] = colorFor(pcts[c], max));
     worldMap.series.regions[0].setValues(values);
   }
 
@@ -412,34 +434,38 @@ function paintGeo() {
 /* Shift + \ edit mode: click a country to set its share of downloads. */
 function editCountry(code) {
   if (!editMode) return;
+  const users = geoTotal();
+  if (!users) {
+    $('#geo-status').textContent =
+      'Set "Total users" first, country shares are a percentage of it.';
+    return;
+  }
   const name = NAME_OF[code] || code;
-  const cur = geoPct(code).toFixed(1);
-  const v = prompt(`Percentage of downloads from ${name}`, cur);
+  const v = prompt(`Percentage of the ${users.toLocaleString('en-US')} downloads from ${name}`,
+                   geoPct(code).toFixed(1));
   if (v === null) return;
   let p = parseFloat(String(v).replace('%', '').trim());
   if (isNaN(p)) return;
-  p = Math.max(0, Math.min(99.9, p));
+  p = Math.max(0, Math.min(100, p));
 
-  // Hold every other country fixed and solve for the count that makes this
-  // country exactly p% of the new total:  x / (others + x) = p/100
-  const others = geoTotal() - (geoCounts[code] || 0);
-  let n;
-  if (p <= 0) n = 0;
-  else if (others === 0) n = 100;                       // first country: seed a round base
-  else n = Math.round((p * others) / (100 - p));
-  geoCounts[code] = n;
+  // Total is fixed (= users), so the count is just that share of it.
+  geoCounts[code] = Math.round((p / 100) * users);
+  if (!geoCounts[code]) delete geoCounts[code];
 
-  saveGeo();
+  const over = geoAssigned();
+  saveGeo(over > 100.5 ? `Heads up: countries now add up to ${over.toFixed(0)}%.` : '');
 }
 
-async function saveGeo() {
+async function saveGeo(note) {
   $('#geo-status').textContent = 'Saving country data...';
   try {
+    // Send every known code, so a country zeroed back to 0 is cleared too.
     const mapping = {};
-    Object.keys(geoCounts).forEach(c => mapping[c] = Math.round(geoCounts[c]));
+    const codes = new Set([...Object.keys(geoCounts), ...(geoKnown || [])]);
+    codes.forEach(c => mapping[c] = Math.round(geoCounts[c] || 0));
     await patchDoc('stats/countries', mapping);
     await refreshGeo();
-    $('#geo-status').textContent = 'Country data saved.';
+    $('#geo-status').textContent = note || 'Country data saved.';
   } catch (e) {
     $('#geo-status').textContent = `Save failed: ${e.message}`;
   }
@@ -455,14 +481,9 @@ function initMap() {
       initial: { fill: '#eff6ff', stroke: '#cbd5e1', strokeWidth: 0.4 },
       hover:   { fillOpacity: 1, cursor: 'pointer' }
     },
-    series: {
-      regions: [{
-        attribute: 'fill',
-        scale: ['#eff6ff', '#1e3a8a'],     // pale blue -> deep blue
-        normalizeFunction: 'polynomial',
-        values: {}
-      }]
-    },
+    // No scale/normalizeFunction: paintGeo() hands this series finished colour
+    // strings, so the shading is ours and always behaves.
+    series: { regions: [{ attribute: 'fill', values: {} }] },
     onRegionTooltipShow(event, tooltip, code) {
       const pct = geoPct(code);
       tooltip.text(`${NAME_OF[code] || tooltip.text()}: ${pct.toFixed(1)}%`, true);

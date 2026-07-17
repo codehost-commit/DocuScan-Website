@@ -88,7 +88,9 @@
   <!-- primary stats -->
   <div class="grid sm:grid-cols-3 gap-4 mb-4" id="cards-primary"></div>
   <!-- derived stats -->
-  <div class="grid sm:grid-cols-2 gap-4 mb-8" id="cards-derived"></div>
+  <div class="grid sm:grid-cols-2 gap-4 mb-4" id="cards-derived"></div>
+  <!-- review stats -->
+  <div class="grid sm:grid-cols-2 gap-4 mb-8" id="cards-reviews"></div>
 
   <h2 class="text-lg font-bold text-ink mb-3">Entries, last 28 days</h2>
   <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
@@ -140,7 +142,14 @@ function toFs(v) {
 }
 async function getDoc(path) {
   const r = await fetch(`${BASE}/${path}?${KEY}`);
-  if (!r.ok) return {};
+  // 404 genuinely means "document not created yet" -> treat as empty.
+  // Anything else (403 rules, network) must surface, not masquerade as zeros.
+  if (r.status === 404) return {};
+  if (!r.ok) {
+    let detail = '';
+    try { detail = (await r.json()).error?.message || ''; } catch (e) {}
+    throw new Error(`${path}: ${r.status} ${detail || r.statusText}`);
+  }
   const j = await r.json();
   return fsToObj(j.fields);
 }
@@ -196,7 +205,9 @@ const CARDS = [
   { key: 'contracts',     label: 'Contracts scanned',     int: true,  group: 'primary' },
   { key: 'entries',       label: 'App entries (MAU)',     int: true,  group: 'primary' },
   { key: 'avg_contracts', label: 'Avg contracts per user', int: false, group: 'derived' },
-  { key: 'avg_entries',   label: 'Avg entries per user',   int: false, group: 'derived' }
+  { key: 'avg_entries',   label: 'Avg entries per user',   int: false, group: 'derived' },
+  { key: 'avg_rating',    label: 'Average rating',         int: false, group: 'reviews' },
+  { key: 'reviews',       label: '# of reviews',           int: true,  group: 'reviews' }
 ];
 let stats = {};        // last values loaded from Firebase
 let daily = [];        // [{key,label,entries}]
@@ -209,7 +220,7 @@ function fmt(card, v) {
   return card.int ? Math.round(v).toLocaleString('en-US') : Number(v).toFixed(1);
 }
 function buildCards() {
-  for (const group of ['primary', 'derived']) {
+  for (const group of ['primary', 'derived', 'reviews']) {
     const host = $(`#cards-${group}`);
     host.innerHTML = '';
     CARDS.filter(c => c.group === group).forEach(c => {
@@ -278,10 +289,14 @@ async function refresh() {
   try {
     const g = await getDoc('stats/global');
     const users = g.users || 0, contracts = g.contracts || 0, entries = g.entries || 0;
+    const reviews = g.reviews || 0, ratingSum = g.rating_sum || 0;
     stats = {
-      users, contracts, entries,
+      users, contracts, entries, reviews,
       avg_contracts: ('avg_contracts' in g) ? g.avg_contracts : (users ? contracts / users : 0),
-      avg_entries:   ('avg_entries'   in g) ? g.avg_entries   : (users ? entries / users : 0)
+      avg_entries:   ('avg_entries'   in g) ? g.avg_entries   : (users ? entries / users : 0),
+      // Average rating is always derived from the running sum, so real reviews
+      // and admin edits can never drift apart.
+      avg_rating:    reviews ? ratingSum / reviews : 0
     };
     const dd = await getDoc('stats/daily');
     daily = last28().map(d => ({ ...d, entries: dd[`entries_${d.key}`] || 0 }));
@@ -380,6 +395,17 @@ async function saveEdits() {
     const v = parseFloat(raw);
     if (!isNaN(v)) mapping[c.key] = c.int ? Math.round(v) : v;
   });
+
+  // "Average rating" is not stored directly. Firestore keeps reviews + rating_sum,
+  // so convert the edited average back into a sum before writing. That keeps a
+  // real incoming review (which bumps both) consistent with hand-set numbers.
+  if ('avg_rating' in mapping || 'reviews' in mapping) {
+    const R = mapping.reviews    !== undefined ? mapping.reviews    : (stats.reviews    || 0);
+    const A = mapping.avg_rating !== undefined ? mapping.avg_rating : (stats.avg_rating || 0);
+    mapping.reviews    = R;
+    mapping.rating_sum = Math.round(A * R);
+    delete mapping.avg_rating;
+  }
 
   const newEntries   = mapping.entries   !== undefined ? mapping.entries   : (stats.entries || 0);
   const newContracts = mapping.contracts !== undefined ? mapping.contracts : (stats.contracts || 0);

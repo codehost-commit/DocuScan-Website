@@ -73,7 +73,7 @@
       <p class="mt-4 text-lg text-slate-500 max-w-xl mx-auto">Free and open source, with contract analysis that runs on your own device.</p>
 
       <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a href="https://github.com/codehost-commit/DocuClerk/releases/latest/download/DocuClerk.exe" class="btn btn-primary text-lg px-10 py-4">
+        <a id="dl-btn" href="https://github.com/codehost-commit/DocuClerk/releases/latest/download/DocuClerk.exe" class="btn btn-primary text-lg px-10 py-4">
           <svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download for Windows
         </a>
@@ -138,6 +138,30 @@
     </div>
   </section>
 
+  <!-- REVIEW -->
+  <section id="review" class="pb-20">
+    <div class="max-w-2xl mx-auto px-6">
+      <div class="card p-6 sm:p-8 reveal">
+        <h2 class="text-2xl font-extrabold text-ink text-center">How was DocuClerk?</h2>
+        <p class="mt-2 text-sm text-slate-500 text-center">Your rating helps other people decide whether to try it. Takes five seconds.</p>
+
+        <div id="stars" class="flex items-center justify-center gap-1.5 mt-6"></div>
+        <p id="rating-label" class="text-center text-sm font-semibold text-slate-400 mt-2 h-5"></p>
+
+        <textarea id="review-comment" rows="4" maxlength="2000"
+          placeholder="Anything you would like to add? (optional)"
+          class="w-full mt-5 px-4 py-3 rounded-xl border border-slate-200 text-sm outline-none transition
+                 focus:border-brand focus:ring-2 focus:ring-brand/20"></textarea>
+
+        <button id="review-submit" disabled
+          class="btn btn-primary w-full mt-4 py-3 disabled:opacity-40 disabled:cursor-not-allowed">
+          Submit review
+        </button>
+        <p id="review-status" class="text-center text-sm mt-3 text-slate-400"></p>
+      </div>
+    </div>
+  </section>
+
   <!-- ASSURANCE STRIP -->
   <section class="py-16 bg-slate-50 border-y border-slate-100">
     <div class="max-w-5xl mx-auto px-6 grid sm:grid-cols-3 gap-8 text-center">
@@ -181,5 +205,117 @@
   </footer>
 
   <script src="js/app.js"></script>
+<script>
+/* =========================================================================
+   Star rating + review submission.
+   Each review is stored as its own document in the "reviews" collection.
+   The running totals (reviews, rating_sum) live on stats/global so the admin
+   screen can show them without reading every review.
+   ========================================================================= */
+(function () {
+  const CFG  = { apiKey: 'AIzaSyCZCQ_mgF_JMcncbDLTT9Wbv1-jZhueV2Q', projectId: 'docuscan-abd6a' };
+  const DOCS = `projects/${CFG.projectId}/databases/(default)/documents`;
+  const BASE = `https://firestore.googleapis.com/v1/${DOCS}`;
+  const KEY  = `key=${CFG.apiKey}`;
+
+  const LABELS = { 1: 'Poor', 2: 'Fair', 3: 'Good', 4: 'Great', 5: 'Excellent' };
+  const starsHost = document.getElementById('stars');
+  const label     = document.getElementById('rating-label');
+  const btn       = document.getElementById('review-submit');
+  const status    = document.getElementById('review-status');
+  const comment   = document.getElementById('review-comment');
+  if (!starsHost) return;
+
+  let selected = 0;
+
+  const STAR_PATH = 'M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6 6.1 20.7l1.2-6.6L2.5 9.5l6.6-.9z';
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', `${i} star${i > 1 ? 's' : ''}`);
+    b.className = 'p-1 transition-transform hover:scale-110 focus:outline-none';
+    b.innerHTML = `<svg class="w-9 h-9 transition-colors" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="${STAR_PATH}"/></svg>`;
+    b.addEventListener('mouseenter', () => paint(i));
+    b.addEventListener('focus',      () => paint(i));
+    b.addEventListener('click',      () => { selected = i; paint(i); update(); });
+    starsHost.appendChild(b);
+    stars.push(b);
+  }
+  starsHost.addEventListener('mouseleave', () => paint(selected));
+
+  // Light up every star up to n, clear the rest.
+  function paint(n) {
+    stars.forEach((b, idx) => {
+      const svg = b.querySelector('svg');
+      const lit = idx < n;
+      svg.setAttribute('fill', lit ? '#f59e0b' : 'none');
+      svg.style.color = lit ? '#f59e0b' : '#cbd5e1';
+    });
+    label.textContent = n ? LABELS[n] : '';
+  }
+  function update() {
+    btn.disabled = selected === 0;
+  }
+  paint(0);
+
+  btn.addEventListener('click', async () => {
+    if (!selected) return;
+    btn.disabled = true;
+    status.className = 'text-center text-sm mt-3 text-slate-400';
+    status.textContent = 'Sending...';
+    try {
+      const body = { fields: {
+        rating:  { integerValue: String(selected) },
+        comment: { stringValue: (comment.value || '').trim().slice(0, 2000) },
+        ts:      { timestampValue: new Date().toISOString() }
+      } };
+      let r = await fetch(`${BASE}/reviews?${KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(`${r.status} ${(await r.json()).error?.message || ''}`);
+
+      // Bump the running totals the admin screen reads.
+      const inc = { writes: [{ transform: {
+        document: `${DOCS}/stats/global`,
+        fieldTransforms: [
+          { fieldPath: 'reviews',    increment: { integerValue: '1' } },
+          { fieldPath: 'rating_sum', increment: { integerValue: String(selected) } }
+        ]
+      } }] };
+      r = await fetch(`https://firestore.googleapis.com/v1/${DOCS}:commit?${KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inc)
+      });
+      if (!r.ok) throw new Error(`${r.status} ${(await r.json()).error?.message || ''}`);
+
+      starsHost.style.pointerEvents = 'none';
+      comment.disabled = true;
+      btn.textContent = 'Thank you';
+      status.className = 'text-center text-sm mt-3 text-accent font-semibold';
+      status.textContent = 'Review submitted. Thanks for helping out.';
+    } catch (e) {
+      btn.disabled = false;
+      status.className = 'text-center text-sm mt-3 text-flag font-medium';
+      status.textContent = `Could not send: ${e.message}`;
+    }
+  });
+
+  // Clicking download starts the file, then nudges the page to the review form.
+  const dl = document.getElementById('dl-btn');
+  if (dl) {
+    dl.addEventListener('click', () => {
+      setTimeout(() => {
+        document.getElementById('review').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        history.replaceState(null, '', '#review');
+      }, 900);
+    });
+  }
+})();
+</script>
 </body>
 </html>

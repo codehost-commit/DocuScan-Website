@@ -30,6 +30,11 @@
     };
   </script>
   <link rel="stylesheet" href="css/custom.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css">
+  <style>
+    #map svg { background: transparent; }
+    .jvm-tooltip { font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; }
+  </style>
 </head>
 
 <body class="bg-slate-50 text-slate-600 antialiased">
@@ -99,8 +104,33 @@
   </div>
 
   <p id="status" class="text-sm text-slate-400 mt-5"></p>
+
+  <!-- ===================== DOWNLOADS BY COUNTRY ===================== -->
+  <h2 class="text-lg font-bold text-ink mt-10 mb-3">Downloads by country</h2>
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+      <div id="map" class="w-full" style="height: 440px;"></div>
+      <div class="flex items-center justify-center gap-3 mt-3 text-[11px] font-semibold text-slate-400">
+        <span>0%</span>
+        <div class="h-2 w-40 rounded-full" style="background:linear-gradient(90deg,#eff6ff,#1e3a8a)"></div>
+        <span id="legend-max">100%</span>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col" style="height: 440px;">
+      <div class="flex items-baseline justify-between mb-3">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">All countries</p>
+        <p id="geo-total" class="text-[11px] font-bold text-slate-400"></p>
+      </div>
+      <div id="geo-list" class="flex-1 overflow-y-auto pr-1 space-y-2"></div>
+    </div>
+  </div>
+  <p id="geo-status" class="text-sm text-slate-400 mt-4"></p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
+<script src="js/countries.js"></script>
 <script>
 /* =========================================================================
    DocuClerk web admin.
@@ -303,10 +333,144 @@ async function refresh() {
     dailyEdits = {};
     paintCards();
     paintChart();
-    $('#status').textContent = 'Up to date. Press Shift + \\ to edit.';
+    $('#status').textContent = 'Up to date.';
+    await refreshGeo();
   } catch (e) {
     $('#status').textContent = `Load failed: ${e.message}`;
   }
+}
+
+/* =========================================================================
+   Downloads by country
+   Firestore keeps a raw count per ISO code on stats/countries. Percentages are
+   always derived from those counts, so real downloads and hand-set numbers can
+   never disagree.
+   ========================================================================= */
+let geoCounts = {};   // ISO code -> download count
+let worldMap = null;
+
+const NAME_OF = {};
+if (typeof COUNTRIES !== 'undefined') COUNTRIES.forEach(c => NAME_OF[c.c] = c.n);
+
+const geoTotal = () => Object.values(geoCounts).reduce((a, b) => a + b, 0);
+function geoPct(code) {
+  const t = geoTotal();
+  return t ? (geoCounts[code] || 0) / t * 100 : 0;
+}
+
+async function refreshGeo() {
+  try {
+    geoCounts = await getDoc('stats/countries');
+    for (const k of Object.keys(geoCounts)) {
+      if (typeof geoCounts[k] !== 'number' || geoCounts[k] < 0) delete geoCounts[k];
+    }
+    paintGeo();
+    $('#geo-status').textContent = '';
+  } catch (e) {
+    $('#geo-status').textContent = `Country data failed: ${e.message}`;
+  }
+}
+
+function paintGeo() {
+  const pcts = {};
+  Object.keys(geoCounts).forEach(c => pcts[c] = geoPct(c));
+  const max = Math.max(1, ...Object.values(pcts));
+  $('#legend-max').textContent = `${max.toFixed(1)}%`;
+  $('#geo-total').textContent = `${geoTotal().toLocaleString('en-US')} downloads`;
+
+  if (worldMap) {
+    // Repaint every region: darker blue = larger share.
+    const values = {};
+    Object.keys(pcts).forEach(c => values[c] = pcts[c]);
+    worldMap.series.regions[0].setValues(values);
+  }
+
+  // Right-hand panel: every country with a share, biggest first.
+  const list = $('#geo-list');
+  list.innerHTML = '';
+  const rows = Object.keys(pcts).filter(c => geoCounts[c] > 0)
+    .sort((a, b) => pcts[b] - pcts[a]);
+  if (!rows.length) {
+    list.innerHTML = '<p class="text-sm text-slate-400">No downloads recorded yet.</p>';
+    return;
+  }
+  rows.forEach(code => {
+    const pct = pcts[code];
+    const row = document.createElement('div');
+    row.innerHTML = `
+      <div class="flex items-baseline justify-between text-xs mb-1">
+        <span class="font-semibold text-ink truncate pr-2">${NAME_OF[code] || code}</span>
+        <span class="font-bold text-slate-400 shrink-0">${pct.toFixed(1)}%</span>
+      </div>
+      <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+        <div class="h-full rounded-full" style="width:${Math.max(2, (pct / max) * 100)}%;background:#2563eb"></div>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+/* Shift + \ edit mode: click a country to set its share of downloads. */
+function editCountry(code) {
+  if (!editMode) return;
+  const name = NAME_OF[code] || code;
+  const cur = geoPct(code).toFixed(1);
+  const v = prompt(`Percentage of downloads from ${name}`, cur);
+  if (v === null) return;
+  let p = parseFloat(String(v).replace('%', '').trim());
+  if (isNaN(p)) return;
+  p = Math.max(0, Math.min(99.9, p));
+
+  // Hold every other country fixed and solve for the count that makes this
+  // country exactly p% of the new total:  x / (others + x) = p/100
+  const others = geoTotal() - (geoCounts[code] || 0);
+  let n;
+  if (p <= 0) n = 0;
+  else if (others === 0) n = 100;                       // first country: seed a round base
+  else n = Math.round((p * others) / (100 - p));
+  geoCounts[code] = n;
+
+  saveGeo();
+}
+
+async function saveGeo() {
+  $('#geo-status').textContent = 'Saving country data...';
+  try {
+    const mapping = {};
+    Object.keys(geoCounts).forEach(c => mapping[c] = Math.round(geoCounts[c]));
+    await patchDoc('stats/countries', mapping);
+    await refreshGeo();
+    $('#geo-status').textContent = 'Country data saved.';
+  } catch (e) {
+    $('#geo-status').textContent = `Save failed: ${e.message}`;
+  }
+}
+
+function initMap() {
+  if (typeof jsVectorMap === 'undefined' || worldMap) return;
+  worldMap = new jsVectorMap({
+    selector: '#map',
+    map: 'world',
+    zoomButtons: true,
+    regionStyle: {
+      initial: { fill: '#eff6ff', stroke: '#cbd5e1', strokeWidth: 0.4 },
+      hover:   { fillOpacity: 1, cursor: 'pointer' }
+    },
+    series: {
+      regions: [{
+        attribute: 'fill',
+        scale: ['#eff6ff', '#1e3a8a'],     // pale blue -> deep blue
+        normalizeFunction: 'polynomial',
+        values: {}
+      }]
+    },
+    onRegionTooltipShow(event, tooltip, code) {
+      const pct = geoPct(code);
+      tooltip.text(`${NAME_OF[code] || tooltip.text()}: ${pct.toFixed(1)}%`, true);
+    },
+    onRegionClick(event, code) {
+      editCountry(code);
+    }
+  });
 }
 
 /* ---- edit mode (Shift + \) ---- */
@@ -321,6 +485,7 @@ function toggleEdit() {
     });
     $('#edit-banner').classList.remove('hidden');
     paintChart();
+    $('#geo-status').textContent = 'Edit mode: click any country on the map to set its percentage.';
   } else {
     saveEdits();
   }
@@ -479,6 +644,7 @@ function openPanel() {
   $('#gate').classList.add('hidden');
   $('#panel').classList.remove('hidden');
   buildCards();
+  initMap();          // must run after #panel is visible or the SVG sizes to 0
   refresh();
 }
 if (sessionStorage.getItem('dc_admin') === '1') openPanel();

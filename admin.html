@@ -399,22 +399,14 @@ function paintGeo() {
     `${geoTotal().toLocaleString('en-US')} downloads` +
     (assigned > 0 ? ` · ${assigned.toFixed(0)}% mapped` : '');
 
-  if (worldMap) {
-    // Colours are computed here rather than via the library's scale, which
-    // silently does nothing when every value is 0 or all values are equal.
-    const values = {};
-    Object.keys(pcts).forEach(c => values[c] = colorFor(pcts[c], max));
-    worldMap.series.regions[0].setValues(values);
-  }
-
   // Right-hand panel: every country with a share, biggest first.
   const list = $('#geo-list');
   list.innerHTML = '';
   const rows = Object.keys(pcts).filter(c => geoCounts[c] > 0)
     .sort((a, b) => pcts[b] - pcts[a]);
   if (!rows.length) {
-    list.innerHTML = '<p class="text-sm text-slate-400">No downloads recorded yet.</p>';
-    return;
+    list.innerHTML = '<p class="text-sm text-slate-400">No downloads attributed yet. ' +
+      'Press Shift + \\ and click a country to set its share.</p>';
   }
   rows.forEach(code => {
     const pct = pcts[code];
@@ -428,6 +420,24 @@ function paintGeo() {
         <div class="h-full rounded-full" style="width:${Math.max(2, (pct / max) * 100)}%;background:#2563eb"></div>
       </div>`;
     list.appendChild(row);
+  });
+
+  paintMap(pcts, max);
+}
+
+/* Shade the map. We set each region's fill directly instead of going through
+   series.setValues(), which requires a scale object and throws without one. */
+function paintMap(pcts, max) {
+  if (!worldMap || !worldMap.regions) return;
+  Object.keys(worldMap.regions).forEach(code => {
+    const region = worldMap.regions[code];
+    if (!region || !region.element) return;
+    const color = colorFor(pcts[code] || 0, max);
+    try {
+      region.element.setStyle('fill', color);
+    } catch (e) {
+      try { region.element.shape.setAttribute('fill', color); } catch (e2) {}
+    }
   });
 }
 
@@ -481,9 +491,8 @@ function initMap() {
       initial: { fill: '#eff6ff', stroke: '#cbd5e1', strokeWidth: 0.4 },
       hover:   { fillOpacity: 1, cursor: 'pointer' }
     },
-    // No scale/normalizeFunction: paintGeo() hands this series finished colour
-    // strings, so the shading is ours and always behaves.
-    series: { regions: [{ attribute: 'fill', values: {} }] },
+    // No series: paintMap() styles each region itself, so the shading works
+    // regardless of how many countries have data.
     onRegionTooltipShow(event, tooltip, code) {
       const pct = geoPct(code);
       tooltip.text(`${NAME_OF[code] || tooltip.text()}: ${pct.toFixed(1)}%`, true);
